@@ -1,0 +1,148 @@
+@font-face {
+  font-family: 'Neue Haas Unica';
+  src: url('/fonts/NeueHaasUnicaPro-Light.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Neue Haas Unica';
+  src: url('/fonts/Neue_Haas_Unica_W06_Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 96%;
+    --foreground: 248 100% 34%;
+
+    --card: 205 64% 93%;
+    --card-foreground: 248 100% 34%;
+
+    --popover: 205 64% 93%;
+    --popover-foreground: 248 100% 34%;
+
+    --primary: 248 100% 34%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 205 50% 87%;
+    --secondary-foreground: 248 100% 34%;
+
+    --muted: 205 40% 90%;
+    --muted-foreground: 248 70% 50%;
+
+    --accent: 205 50% 88%;
+    --accent-foreground: 248 100% 34%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 205 30% 80%;
+    --input: 205 30% 80%;
+    --ring: 248 100% 34%;
+
+    --radius: 0.75rem;
+
+    /* Custom tokens */
+    --accent-blue: 248 100% 34%;
+    --accent-blue-light: 248 70% 60%;
+    --text-dim: 248 100% 34% / 0.35;
+    --text-body: 248 100% 34% / 0.6;
+    --text-bright: 248 100% 34%;
+    --card-hover: 205 60% 89%;
+    --border-accent: 248 100% 34% / 0.25;
+
+    --sidebar-background: 205 64% 93%;
+    --sidebar-foreground: 248 100% 34%;
+    --sidebar-primary: 248 100% 34%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 205 50% 87%;
+    --sidebar-accent-foreground: 248 100% 34%;
+    --sidebar-border: 205 30% 80%;
+    --sidebar-ring: 248 100% 34%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Neue Haas Unica', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-weight: 300;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* Typography utilities */
+.font-display {
+  font-family: 'Neue Haas Unica', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 700;
+}
+
+.font-serif {
+  font-family: 'Neue Haas Unica', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 700;
+}
+
+.font-mono {
+  font-family: 'Neue Haas Unica', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+/* Grid overlay - removed */
+
+/* Card glow line — unused in current theme */
+
+/* Pipeline line */
+.pipeline-line {
+  position: absolute;
+  left: 28px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, hsl(248 100% 34% / 0.2), hsl(248 100% 34% / 0.1));
+  border-radius: 2px;
+  z-index: 1;
+}
+
+.pipeline-glow {
+  position: absolute;
+  left: 24px;
+  top: 0;
+  bottom: 0;
+  width: 10px;
+  background: linear-gradient(to bottom, hsl(248 100% 34% / 0.05), hsl(248 100% 34% / 0.02), hsl(248 100% 34% / 0.05));
+  filter: blur(6px);
+  z-index: 1;
+}
+
+/* Scroll hint pulse */
+@keyframes pulse-hint {
+  0%, 100% { opacity: 0.25; transform: translateX(-50%) translateY(0); }
+  50% { opacity: 0.5; transform: translateX(-50%) translateY(4px); }
+}
+
+.scroll-hint-anim {
+  animation: pulse-hint 2.5s ease-in-out infinite;
+}
+
+/* Bracket corners */
+.bracket {
+  position: fixed;
+  z-index: 20;
+  opacity: 0.15;
+}
+
+.bracket svg {
+  width: 36px;
+  height: 36px;
+}
