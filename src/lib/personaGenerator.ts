@@ -10,11 +10,11 @@ export interface PersonaResult {
     analyzed: number;
     engagement: string;
     reach: string;
-    cmoScore: number;
-    authority: number;
-    clarity: number;
-    influence: number;
-    growth: number;
+    analyticsScore: number;
+    precision: number;
+    depth: number;
+    signal: number;
+    scale: number;
     voiceConsistency: number;
     engagementScore: number;
   };
@@ -39,51 +39,54 @@ function seededRandom(seed: number) {
 }
 
 const ARCHETYPES = [
-  { name: "The Category Creator", emoji: "🗺️", description: "You invented a market category nobody asked for and convinced a VC to fund it anyway." },
-  { name: "The Narrative Architect", emoji: "🧱", description: "You've reframed three layoffs as 'strategic pivots.' The board believed you every time." },
-  { name: "The Culture Vulture", emoji: "🦅", description: "You spotted the trend 6 months late, called it a campaign, and took credit for the moment." },
-  { name: "The Growth Savage", emoji: "⚡", description: "You A/B test your out-of-office. Sleep is just an untested variable." },
-  { name: "The Thought Leader", emoji: "🎤", description: "You've said 'content is king' unironically at a conference. You have a newsletter. Obviously." },
-  { name: "The Contrarian Marketeer", emoji: "🔄", description: "Your entire go-to-market strategy is just 'everyone else is doing it wrong.' Somehow it works." },
-  { name: "AI Slop Marketeer", emoji: "🤖", description: "Suspiciously polished takes, zero original thoughts — sir this is a Wendy's." },
-  { name: "NPC Marketeer", emoji: "🪆", description: "Best practices. Industry standards. Proven frameworks. You are the content calendar." },
-  { name: "Giga Brain Marketeer", emoji: "🧠", description: "You see 10 moves ahead. The strategy memo reads like a philosophy paper. Everyone's confused but the numbers are up." },
-  { name: "Burger Flipper", emoji: "🍟", description: "The tools you ignored are now doing your job better. McDonald's is hiring. Your Slack is quiet. Very quiet." },
-  { name: "Copy Pasta Marketeer", emoji: "📋", description: "Your strategy deck is a Frankenstein of three competitor playbooks and a McKinsey slide you found on LinkedIn." },
-  { name: "Memecoin Warrior", emoji: "🚀", description: "Brand strategy? Vibes. Budget allocation? Moon or zero. You've used 'ser' in a press release." },
-  { name: "Rick Rubin Vibe Marketeer", emoji: "🧘", description: "No slides. No KPIs. You sat in a barn for three weeks and came back with 'the brand needs to breathe.' It worked." },
+  // Vault Data profiles
+  { name: "Altura Gigachad", emoji: "💎", description: ">$5K deposited in vault or AVLT on Pendle. You don't just talk the talk — your wallet backs it up." },
+  { name: "Diamond Hands", emoji: "🤲", description: "Has never withdrawn. Just sits and compounds. Your patience is your superpower." },
+  { name: "80%+ APY Legend", emoji: "📈", description: "Deposited 60+ days ago, rode the early boosted yields. You were here before it was cool." },
+  { name: "Altura OG", emoji: "🏛️", description: "Deposited in the first week. You believed before there was proof. Respect." },
+  { name: "Epoch 0 Survivor", emoji: "⚔️", description: "Was in YieldRun from day one. Battle-tested and still standing." },
+  { name: "Baby Whale", emoji: "🐋", description: "$1K–$5K deposited. Not quite Gigachad yet. But you're on your way." },
+  { name: "Pendle LP Degen", emoji: "🧪", description: "Providing liquidity on the Pendle pool, not just holding PT. You actually understand yield." },
+  // X Activity profiles
+  { name: "Hyperliquid Maxi", emoji: "⚡", description: "Tweets about HYPE non-stop. Stopped working after the airdrop, full-time X creator now." },
+  { name: "Bro Stop Posting About Memecoins", emoji: "🛑", description: "Self-explanatory. Half of CT qualifies. Your timeline is 90% dog coins and regret." },
+  { name: "InfoFi Enjooooyor", emoji: "📡", description: "Still tweeting about InfoFi. It's been dead for 3 months. Someone tell them." },
+  { name: "CT Lurker", emoji: "👀", description: "Barely posts, likes everything. 90% likes and 10% 'gm.' The silent majority." },
+  { name: "Airdrop Hunter", emoji: "🎯", description: "Tweets about every testnet and points program. 200 protocols, 0 airdrops." },
+  { name: "Thread Guy", emoji: "🧵", description: "Posts 1/47 threads. Never finishes. The graveyard of unfinished alpha is vast." },
+  { name: "Quote Tweet Warrior", emoji: "⚔️", description: "Ratio game strong. Original content nonexistent. You live to dunk." },
 ];
 
 const ALL_TRAITS = [
-  "Authentic", "Strategic", "Analytical", "Creative", "Direct",
-  "Empathetic", "Innovative", "Thoughtful", "Bold", "Precise",
-  "Curious", "Resilient", "Collaborative", "Focused", "Transparent",
-  "Persuasive", "Pragmatic", "Energetic", "Calm", "Witty",
+  "Degen", "Diamond Hands", "Paper Hands", "Alpha Hunter", "Contrarian",
+  "On-Chain Sleuth", "Thread Boi", "Yield Farmer", "Gas Optimizer", "Airdrop Hunter",
+  "Whale Watcher", "Liquidity Sniper", "Governance Maxi", "Memetic", "Based",
+  "Ngmi-Resistant", "Rug-Proof", "Conviction-Pilled", "Narratoor", "Exit Liquidity",
 ];
 
 const ALL_TOPICS = [
-  "Tech & AI", "Startups", "Design", "Product Strategy", "Marketing",
-  "Leadership", "Culture", "Finance", "Philosophy", "Science",
-  "Health & Fitness", "Crypto / Web3", "VC & Investing", "Career Growth", "Writing",
-  "Mental Models", "Future of Work", "Developer Tools", "Brand Building", "Geopolitics",
+  "DeFi Protocols", "NFT Culture", "Layer 2 Scaling", "MEV & Flashbots", "Tokenomics",
+  "DAO Governance", "Zero-Knowledge Proofs", "Restaking", "Memecoin Meta", "On-Chain Analytics",
+  "Airdrop Farming", "Liquid Staking", "Cross-Chain Bridges", "Perpetual DEXs", "Real World Assets",
+  "Account Abstraction", "Modular Blockchains", "Intent-Based Trading", "Social Tokens", "AI x Crypto",
 ];
 
 const ENGAGEMENT_STYLES = [
-  "Long-form threads that go viral",
-  "Hot takes that spark debate",
-  "Quiet wisdom that ages well",
-  "Tactical tips people screenshot",
-  "Personal stories that build trust",
-  "Data-backed insights that inform",
+  "Mega-threads that go viral at 3am",
+  "One-word replies that somehow get 1000 likes",
+  "Contrarian takes that age like fine wine",
+  "Charts with mysterious circles and arrows",
+  "Deep-dive alpha that nobody reads",
+  "Ratio-ing influencers for sport",
 ];
 
 const AUDIENCE_TYPES = [
-  "Founders & Builders",
-  "Knowledge Workers",
-  "Creative Professionals",
-  "Investors & Operators",
-  "Tech Enthusiasts",
-  "Industry Insiders",
+  "CT Degens & Shitposters",
+  "DeFi Power Users",
+  "NFT Collectors & Flippers",
+  "Protocol Researchers",
+  "Airdrop Farmers",
+  "Crypto VCs & Fund Managers",
 ];
 
 const GRADIENTS = [
@@ -106,7 +109,7 @@ export function parseUsername(input: string): string {
 }
 
 const EASTER_EGGS: Record<string, number> = {
-  jackhaldorsson: 9, // "Soon Working at McDonald's"
+  jackhaldorsson: 8, // The Signal Hunter
 };
 
 export function generatePersona(username: string): PersonaResult {
@@ -138,11 +141,11 @@ export function generatePersona(username: string): PersonaResult {
   const engagement = (1 + rand() * 8).toFixed(1) + "%";
   const reach = Math.floor(rand() * 900 + 100) + "K";
 
-  const cmoScore = 52 + Math.floor(rand() * 43);
-  const authority = 12 + Math.floor(rand() * 14);
-  const clarity = 12 + Math.floor(rand() * 14);
-  const influence = 12 + Math.floor(rand() * 14);
-  const growth = 12 + Math.floor(rand() * 14);
+  const analyticsScore = 52 + Math.floor(rand() * 43);
+  const precision = 12 + Math.floor(rand() * 14);
+  const depth = 12 + Math.floor(rand() * 14);
+  const signal = 12 + Math.floor(rand() * 14);
+  const scale = 12 + Math.floor(rand() * 14);
   const voiceConsistency = 58 + Math.floor(rand() * 39);
   const engagementScore = 55 + Math.floor(rand() * 41);
 
@@ -154,6 +157,6 @@ export function generatePersona(username: string): PersonaResult {
     engagementStyle,
     audienceType,
     gradient,
-    stats: { analyzed, engagement, reach, cmoScore, authority, clarity, influence, growth, voiceConsistency, engagementScore },
+    stats: { analyzed, engagement, reach, analyticsScore, precision, depth, signal, scale, voiceConsistency, engagementScore },
   };
 }

@@ -7,9 +7,8 @@ export default function BluOrbBackground() {
 
   useEffect(() => {
     const ASCII_RAMP = '@#S08Xox+=;:-,. ';
-    const BG_DOT: [number, number, number] = [160, 190, 220];
+    const BG_DOT: [number, number, number] = [15, 30, 22];
 
-    // Mutable layout state shared between animate loop and resize handler
     let CELL_W: number, CELL_H: number, COLS: number, ROWS: number;
     let RADIUS: number, CX: number, CY: number, canvasW: number, canvasH: number;
     let cellData: Array<Array<{ subject: boolean; r?: number; g?: number; b?: number; lum?: number }>> = [];
@@ -30,7 +29,6 @@ export default function BluOrbBackground() {
       ROWS = Math.ceil(canvasH / CELL_H);
       CX = COLS / 2;
       CY = ROWS / 2;
-      // Radius in pixels so the orb is a true circle regardless of cell aspect ratio
       RADIUS = Math.round(Math.min(canvasW, canvasH) * 0.42);
 
       for (const ref of [bgRef, gridRef, asciiRef]) {
@@ -48,7 +46,6 @@ export default function BluOrbBackground() {
       for (let row = 0; row < ROWS; row++) {
         cellData.push([]);
         for (let col = 0; col < COLS; col++) {
-          // Work in pixel space so the orb is a true circle
           const pxDx = (col - CX) * CELL_W, pxDy = (row - CY) * CELL_H;
           const dist = Math.sqrt(pxDx * pxDx + pxDy * pxDy);
           if (dist > RADIUS) { cellData[row].push({ subject: false }); continue; }
@@ -59,19 +56,20 @@ export default function BluOrbBackground() {
           const len = Math.sqrt(lx * lx + ly * ly + lz * lz);
           const dot = Math.max(0, (nx * lx + ny * ly + nz * lz) / len);
 
-          const baseR = 58, baseG = 122, baseB = 184;
+          // Green orb for Altura
+          const baseR = 20, baseG = 51, baseB = 40;
           const light = 0.2 + dot * 0.65;
           const spec = Math.pow(Math.max(0, dot), 20) * 0.5;
           const edgeFactor = Math.pow(nz, 0.4);
 
-          let r = Math.min(255, Math.round((baseR * light + 220 * spec) * edgeFactor + baseR * 0.06));
-          let g = Math.min(255, Math.round((baseG * light + 235 * spec) * edgeFactor + baseG * 0.06));
+          let r = Math.min(255, Math.round((baseR * light + 255 * spec) * edgeFactor + baseR * 0.06));
+          let g = Math.min(255, Math.round((baseG * light + 255 * spec) * edgeFactor + baseG * 0.06));
           let b = Math.min(255, Math.round((baseB * light + 255 * spec) * edgeFactor + baseB * 0.06));
 
           const edgeDark = Math.pow(1 - nz, 2.5) * 0.6;
-          r = Math.round(r * (1 - edgeDark) + 20 * edgeDark);
-          g = Math.round(g * (1 - edgeDark) + 50 * edgeDark);
-          b = Math.round(b * (1 - edgeDark) + 110 * edgeDark);
+          r = Math.round(r * (1 - edgeDark) + 27 * edgeDark);
+          g = Math.round(g * (1 - edgeDark) + 27 * edgeDark);
+          b = Math.round(b * (1 - edgeDark) + 27 * edgeDark);
 
           const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
           cellData[row].push({ subject: true, r, g, b, lum });
@@ -82,7 +80,7 @@ export default function BluOrbBackground() {
     function drawBg() {
       const ctx = bgRef.current?.getContext('2d');
       if (!ctx) return;
-      ctx.fillStyle = '#f3f8ff';
+      ctx.fillStyle = '#000000';
       ctx.fillRect(0, 0, canvasW, canvasH);
     }
 
@@ -90,7 +88,7 @@ export default function BluOrbBackground() {
       const ctx = gridRef.current?.getContext('2d');
       if (!ctx) return;
       ctx.clearRect(0, 0, canvasW, canvasH);
-      ctx.strokeStyle = 'rgba(58,122,184,0.06)';
+      ctx.strokeStyle = 'rgba(20,51,40,0.08)';
       ctx.lineWidth = 0.5;
       const STEP = CELL_W * 2;
       for (let x = 0; x < canvasW; x += STEP) {
@@ -112,11 +110,42 @@ export default function BluOrbBackground() {
       return ASCII_RAMP[Math.max(0, Math.min(ASCII_RAMP.length - 1, Math.floor((1 - lum) * (ASCII_RAMP.length - 1))))];
     }
 
+    function drawStaticBgDots() {
+      const ctx = asciiRef.current?.getContext('2d');
+      if (!ctx) return;
+      // Draw background dots once on a separate pass (they don't animate)
+      const bgDotCanvas = document.createElement('canvas');
+      bgDotCanvas.width = canvasW;
+      bgDotCanvas.height = canvasH;
+      const bgDotCtx = bgDotCanvas.getContext('2d')!;
+      bgDotCtx.font = `bold ${CELL_H - 2}px monospace`;
+      bgDotCtx.textBaseline = 'top';
+      const bgDotStyle = `rgb(${BG_DOT[0]},${BG_DOT[1]},${BG_DOT[2]})`;
+      bgDotCtx.fillStyle = bgDotStyle;
+      bgDotCtx.globalAlpha = 0.12;
+      for (let row = 0; row < ROWS; row++) {
+        for (let col = 0; col < COLS; col++) {
+          if (!cellData[row]?.[col]?.subject) {
+            bgDotCtx.fillText('.', col * CELL_W, row * CELL_H);
+          }
+        }
+      }
+      return bgDotCanvas;
+    }
+
+    let bgDotCanvas: HTMLCanvasElement | undefined;
+
     function animate() {
       const asciiC = asciiRef.current;
       if (!asciiC) return;
       const ctx = asciiC.getContext('2d')!;
       ctx.clearRect(0, 0, canvasW, canvasH);
+
+      // Draw cached background dots
+      if (bgDotCanvas) {
+        ctx.drawImage(bgDotCanvas, 0, 0);
+      }
+
       ctx.font = `bold ${CELL_H - 2}px monospace`;
       ctx.textBaseline = 'top';
       const shineDiag = ((frame % 200) / 200) * (COLS + ROWS);
@@ -124,16 +153,8 @@ export default function BluOrbBackground() {
       for (let row = 0; row < ROWS; row++) {
         for (let col = 0; col < COLS; col++) {
           const cell = cellData[row]?.[col];
-          if (!cell) continue;
+          if (!cell || !cell.subject) continue;
           const x = col * CELL_W, y = row * CELL_H;
-
-          if (!cell.subject) {
-            ctx.globalAlpha = 0.16;
-            ctx.fillStyle = `rgb(${BG_DOT[0]},${BG_DOT[1]},${BG_DOT[2]})`;
-            ctx.fillText('.', x, y);
-            ctx.globalAlpha = 1;
-            continue;
-          }
 
           let lum = cell.lum!, r = cell.r!, g = cell.g!, b = cell.b!, alpha = 1;
           if (lum > 0.55) lum = Math.min(1, lum + Math.sin(frame * 0.035 + col * 0.25 + row * 0.18) * 0.06);
@@ -143,8 +164,8 @@ export default function BluOrbBackground() {
             const md = Math.sqrt(((col - mouseCol) * CELL_W) ** 2 + ((row - mouseRow) * CELL_H) ** 2) / CELL_W;
             if (md < 8) {
               const rip = Math.max(0, 1 - md / 8);
-              r = Math.round(r * (1 - rip * 0.3) + 30 * rip * 0.3);
-              g = Math.round(g * (1 - rip * 0.2) + 150 * rip * 0.2);
+              r = Math.min(255, Math.round(r + (255 - r) * rip * 0.3));
+              g = Math.min(255, Math.round(g + (255 - g) * rip * 0.3));
               b = Math.min(255, Math.round(b + (255 - b) * rip * 0.3));
               if (md < 2) ch = ASCII_RAMP[Math.floor(Math.random() * ASCII_RAMP.length)];
             }
@@ -163,16 +184,16 @@ export default function BluOrbBackground() {
           if (!flicker[key] && Math.random() < 0.002) flicker[key] = Math.floor(Math.random() * 6) + 2;
           if (flicker[key]) { flicker[key]--; alpha *= 0.3 + Math.random() * 0.7; }
 
-          const [nr, ng, nb] = normColor(r, g, b);
+          const mx = Math.max(r, g, b, 1);
+          const nr = Math.round(r / mx * 255);
+          const ng = Math.round(g / mx * 255);
+          const nb = Math.round(b / mx * 255);
           ctx.globalAlpha = alpha;
-          if (lum > 0.65) { ctx.shadowBlur = lum * 10; ctx.shadowColor = `rgba(58,122,184,0.8)`; }
-          else ctx.shadowBlur = 0;
           ctx.fillStyle = `rgb(${nr},${ng},${nb})`;
           ctx.fillText(ch, x, y);
-          ctx.globalAlpha = 1;
-          ctx.shadowBlur = 0;
         }
       }
+      ctx.globalAlpha = 1;
       frame++;
       animId = requestAnimationFrame(animate);
     }
@@ -182,6 +203,7 @@ export default function BluOrbBackground() {
       buildOrbData();
       drawBg();
       drawGrid();
+      bgDotCanvas = drawStaticBgDots();
       animate();
     }
 
@@ -218,10 +240,10 @@ export default function BluOrbBackground() {
   }, []);
 
   return (
-    <div className="fixed inset-0 z-0" style={{ background: '#f3f8ff' }}>
-      <canvas ref={bgRef} className="absolute inset-0" />
-      <canvas ref={gridRef} className="absolute inset-0" />
-      <canvas ref={asciiRef} className="absolute inset-0 pointer-events-none" />
+    <div className="fixed inset-0 z-0" style={{ background: '#000000' }}>
+      <canvas ref={bgRef} className="absolute inset-0" style={{ willChange: 'transform' }} />
+      <canvas ref={gridRef} className="absolute inset-0" style={{ willChange: 'transform' }} />
+      <canvas ref={asciiRef} className="absolute inset-0 pointer-events-none" style={{ opacity: 0.6, willChange: 'transform' }} />
     </div>
   );
 }

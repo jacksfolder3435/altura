@@ -1,15 +1,15 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-const BRAND = "#1800ad";
+const BRAND = "#5EFFCA";
 
 const STEPS = [
   { text: "Connecting to X API...", duration: 600 },
   { text: "Fetching your recent posts...", duration: 800 },
-  { text: "Scanning content patterns...", duration: 900 },
-  { text: "Mapping your personality signals...", duration: 900 },
-  { text: "Identifying your archetype...", duration: 800 },
-  { text: "Generating your persona card...", duration: 700 },
+  { text: "Scanning on-chain patterns...", duration: 900 },
+  { text: "Mapping your crypto signals...", duration: 900 },
+  { text: "Building your digital defi profile...", duration: 800 },
+  { text: "Generating your profile card...", duration: 700 },
 ];
 
 export default function AnalysisLoader({ username, onComplete }: { username: string; onComplete: () => void }) {
@@ -54,23 +54,24 @@ export default function AnalysisLoader({ username, onComplete }: { username: str
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="flex flex-col items-center justify-center min-h-[380px] w-full max-w-md mx-auto px-4"
-      style={{ fontFamily: "'Neue Haas Unica', 'Helvetica Neue', Helvetica, Arial, sans-serif" }}
+      style={{ fontFamily: "'Funnel Display', 'Helvetica Neue', Helvetica, Arial, sans-serif" }}
     >
-      {/* Animated X logo */}
+      {/* Animated analytics icon */}
       <motion.div
         animate={{ rotate: 360 }}
         transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
         className="w-14 h-14 rounded-full mb-8 flex items-center justify-center"
         style={{ background: BRAND }}
       >
-        <svg viewBox="0 0 24 24" className="w-7 h-7 fill-white">
-          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.259 5.63L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+        <svg viewBox="0 0 24 24" className="w-7 h-7 fill-none stroke-black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 3v18h18" />
+          <path d="M7 16l4-8 4 4 6-8" />
         </svg>
       </motion.div>
 
       <p
         className="text-xs font-mono tracking-widest mb-5"
-        style={{ color: BRAND, opacity: 0.45 }}
+        style={{ color: BRAND, opacity: 0.6 }}
       >
         analyzing @{username}
       </p>
@@ -85,7 +86,7 @@ export default function AnalysisLoader({ username, onComplete }: { username: str
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.3 }}
             className="text-base text-center"
-            style={{ color: BRAND, fontWeight: 300 }}
+            style={{ color: "#FAFAFA", fontWeight: 300 }}
           >
             {STEPS[stepIndex]?.text}
           </motion.p>
@@ -95,7 +96,7 @@ export default function AnalysisLoader({ username, onComplete }: { username: str
       {/* Progress bar */}
       <div
         className="w-full rounded-full h-px overflow-hidden mb-3"
-        style={{ background: `rgba(24,0,173,0.12)` }}
+        style={{ background: `rgba(94,255,202,0.15)` }}
       >
         <motion.div
           className="h-full rounded-full"
@@ -107,7 +108,7 @@ export default function AnalysisLoader({ username, onComplete }: { username: str
 
       <span
         className="text-xs font-mono"
-        style={{ color: BRAND, opacity: 0.3 }}
+        style={{ color: BRAND, opacity: 0.4 }}
       >
         {progress}%
       </span>
