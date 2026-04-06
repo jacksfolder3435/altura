@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const BRAND = "#5EFFCA";
@@ -12,40 +12,50 @@ const STEPS = [
   { text: "Generating your profile card...", duration: 700 },
 ];
 
+const TOTAL_DURATION = STEPS.reduce((a, s) => a + s.duration, 0);
+
+// Cumulative end time for each step
+const STEP_END_TIMES = STEPS.reduce<number[]>((acc, s) => {
+  acc.push((acc[acc.length - 1] ?? 0) + s.duration);
+  return acc;
+}, []);
+
 export default function AnalysisLoader({ username, onComplete }: { username: string; onComplete: () => void }) {
   const [stepIndex, setStepIndex] = useState(0);
   const [progress, setProgress] = useState(0);
+  // onComplete must only fire once even if React's StrictMode runs the
+  // effect twice in dev — use a ref guard.
+  const completedRef = useRef(false);
 
   useEffect(() => {
-    let current = 0;
-    let totalElapsed = 0;
-    const totalDuration = STEPS.reduce((a, s) => a + s.duration, 0);
-
-    const runStep = () => {
-      if (current >= STEPS.length) {
+    const start = Date.now();
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - start;
+      if (elapsed >= TOTAL_DURATION) {
         setProgress(100);
-        setTimeout(onComplete, 300);
+        setStepIndex(STEPS.length - 1);
+        clearInterval(interval);
+        if (!completedRef.current) {
+          completedRef.current = true;
+          // Small delay so the user sees 100% briefly
+          setTimeout(onComplete, 300);
+        }
         return;
       }
-      setStepIndex(current);
-      const stepDuration = STEPS[current].duration;
-      const startElapsed = totalElapsed;
+      // Find which step we're in based on elapsed time
+      let idx = 0;
+      for (let i = 0; i < STEP_END_TIMES.length; i++) {
+        if (elapsed < STEP_END_TIMES[i]!) {
+          idx = i;
+          break;
+        }
+      }
+      setStepIndex(idx);
+      setProgress(Math.min(99, Math.round((elapsed / TOTAL_DURATION) * 100)));
+    }, 50);
 
-      const interval = setInterval(() => {
-        totalElapsed = startElapsed + stepDuration;
-        setProgress(Math.min(100, Math.round((totalElapsed / totalDuration) * 100)));
-      }, 50);
-
-      setTimeout(() => {
-        clearInterval(interval);
-        totalElapsed = STEPS.slice(0, current + 1).reduce((a, s) => a + s.duration, 0);
-        setProgress(Math.round((totalElapsed / totalDuration) * 100));
-        current++;
-        runStep();
-      }, stepDuration);
-    };
-
-    runStep();
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
