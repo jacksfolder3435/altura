@@ -34,11 +34,40 @@ export interface AlturaHolderError {
 
 export interface AlturaSummary {
   isHolder: boolean;
+  /** Cost basis in USD — the total amount deposited (Altura `costBasis`). */
   totalDepositedUSD: number;
+  /** Current portfolio value in USD (Altura `currentValue` / `portfolioValue`). */
   currentValueUSD: number;
+  /** Exact unrealized PnL in USD, taken directly from Altura's `unrealizedPnL`
+   *  field (which is in raw 6-decimal token units). */
   pnlUSD: number;
+  /** Percentage gain/loss = pnlUSD / costBasis * 100. */
   pnlPercent: number;
+  /** Annualized return — null if Altura doesn't expose APY (currently the case;
+   *  Altura's snapshot endpoint only gives a point-in-time PnL, not APY). */
+  apy: number | null;
+  /** Total balance of vault tokens (Altura `totalBalanceFormatted`). */
+  vaultTokenBalance: number;
+  /** On-chain wallet address. */
   walletAddress: string;
+  /** Raw passthrough of the Altura snapshot for debugging / future use. */
+  raw: {
+    costBasis: string;
+    currentValue: string;
+    unrealizedPnL: string;
+    portfolioValue: string;
+    avgPricePerShareFormatted: string;
+  };
+}
+
+/**
+ * Altura's `unrealizedPnL` is returned in raw 6-decimal token units (USDC-style).
+ * Convert to a JS number in USD.
+ */
+function parseUnrealizedPnL(raw: string): number {
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return 0;
+  return n / 1_000_000;
 }
 
 export async function fetchAlturaHolder(
@@ -63,17 +92,33 @@ export async function fetchAlturaHolder(
   const data = (await res.json()) as AlturaHolderResponse | AlturaHolderError;
   if ("error" in data) return null;
 
-  const costBasis = Number(data.holder.costAnalysis.overall.costBasis);
-  const currentValue = Number(data.holder.costAnalysis.overall.currentValue);
-  const pnl = currentValue - costBasis;
-  const pnlPct = costBasis > 0 ? (pnl / costBasis) * 100 : 0;
+  const overall = data.holder.costAnalysis.overall;
+  const costBasis = Number(overall.costBasis);
+  const currentValue = Number(overall.currentValue);
+
+  // EXACT PnL straight from Altura's `unrealizedPnL` field. Falls back to
+  // currentValue - costBasis if (for some reason) the field is missing.
+  const exactPnl = overall.unrealizedPnL
+    ? parseUnrealizedPnL(overall.unrealizedPnL)
+    : currentValue - costBasis;
+
+  const pnlPct = costBasis > 0 ? (exactPnl / costBasis) * 100 : 0;
 
   return {
     isHolder: true,
     totalDepositedUSD: costBasis,
     currentValueUSD: currentValue,
-    pnlUSD: pnl,
+    pnlUSD: exactPnl,
     pnlPercent: pnlPct,
+    apy: null, // Altura snapshot does not expose APY
+    vaultTokenBalance: Number(data.holder.totalBalanceFormatted),
     walletAddress: data.walletAddress,
+    raw: {
+      costBasis: overall.costBasis,
+      currentValue: overall.currentValue,
+      unrealizedPnL: overall.unrealizedPnL,
+      portfolioValue: data.holder.portfolioValue,
+      avgPricePerShareFormatted: overall.avgPricePerShareFormatted,
+    },
   };
 }

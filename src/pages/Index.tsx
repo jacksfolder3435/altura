@@ -15,23 +15,29 @@ const EXAMPLE_HANDLES = ["@sama", "@paulg", "@naval", "@lexfridman"];
 const BRAND = "#5EFFCA";
 const FONT = "'Funnel Display', 'Helvetica Neue', Helvetica, Arial, sans-serif";
 
-function fmtUSDAmount(n: number): string {
-  return `$${Math.abs(n).toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
+/** Format an exact USD amount with cents (e.g. "$144.90"). */
+function fmtUSDExact(n: number): string {
+  const abs = Math.abs(n);
+  return `$${abs.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
 }
 
 function fmtPct(n: number): string {
   const sign = n >= 0 ? "+" : "";
-  return `${sign}${n.toFixed(1)}%`;
+  return `${sign}${n.toFixed(2)}%`;
 }
 
 function alturaToPnl(a: AlturaSummary): PnlData {
   return {
-    totalDeposited: fmtUSDAmount(a.totalDepositedUSD),
-    currentValue: fmtUSDAmount(a.currentValueUSD),
-    // Card prefixes its own +/- sign — we just give the magnitude
-    pnl: fmtUSDAmount(a.pnlUSD),
+    // Exact dollar amounts straight from Altura's costAnalysis
+    totalDeposited: fmtUSDExact(a.totalDepositedUSD),
+    currentValue: fmtUSDExact(a.currentValueUSD),
+    // EXACT unrealizedPnL from Altura — magnitude only (card prefixes the sign)
+    pnl: fmtUSDExact(a.pnlUSD),
     pnlPercent: fmtPct(a.pnlPercent),
-    // Altura API doesn't expose APY yet — show realised pnl % as a proxy
+    // Altura snapshot doesn't expose APY — show the realised return %
     apy: fmtPct(a.pnlPercent),
     vaultDays: 0,
     isPositive: a.pnlUSD >= 0,

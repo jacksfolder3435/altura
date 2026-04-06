@@ -32,11 +32,30 @@ export interface XUser {
 
 export interface AlturaSummary {
   isHolder: boolean;
+  /** Cost basis in USD — total amount deposited (Altura `costBasis`). */
   totalDepositedUSD: number;
+  /** Current portfolio value in USD (Altura `currentValue`/`portfolioValue`). */
   currentValueUSD: number;
+  /** Exact unrealized PnL in USD, taken directly from Altura's
+   *  `unrealizedPnL` field. */
   pnlUSD: number;
+  /** Percentage gain = pnlUSD / costBasis * 100. */
   pnlPercent: number;
+  /** Annualized return — null because Altura's snapshot endpoint doesn't
+   *  expose APY. */
+  apy: number | null;
+  /** Vault token balance (Altura `totalBalanceFormatted`). */
+  vaultTokenBalance: number;
+  /** On-chain wallet address. */
   walletAddress: string;
+  /** Raw Altura values for debugging. */
+  raw?: {
+    costBasis: string;
+    currentValue: string;
+    unrealizedPnL: string;
+    portfolioValue: string;
+    avgPricePerShareFormatted: string;
+  };
 }
 
 export interface ProfileResponse {
