@@ -77,12 +77,13 @@ const FigmaDefiCard = forwardRef<HTMLDivElement, Props>(function FigmaDefiCard(
         </div>
       </div>
 
-      {/* Footer URL — sits below the QR on its own line, doesn't overlap */}
+      {/* Footer URL — sits BELOW the QR on its own line. QR ends at y=387,
+          this is at y=400 with extra spacing. */}
       <p
-        className="absolute bg-clip-text font-medium leading-[10px] left-[34px] opacity-50 text-[9px] text-[transparent] uppercase whitespace-nowrap"
+        className="absolute bg-clip-text font-medium leading-[10px] left-[34px] opacity-55 text-[8px] text-[transparent] uppercase whitespace-nowrap"
         style={{
           fontFamily: "'Geist Mono', monospace",
-          top: 410,
+          top: 400,
           backgroundImage:
             "linear-gradient(172.86deg, rgb(186, 209, 193) 10.448%, rgb(220, 235, 226) 53.323%, rgb(255, 255, 255) 73.433%)",
         }}
@@ -108,7 +109,8 @@ const FigmaDefiCard = forwardRef<HTMLDivElement, Props>(function FigmaDefiCard(
         <img alt="Altura" className="absolute block max-w-none size-full" src={imgVector3} />
       </div>
 
-      {/* Content stack: badge → archetype → description → QR */}
+      {/* Content stack: badge → archetype → description (QR is positioned
+          absolutely below so it never overlaps the footer URL) */}
       <div className="absolute content-stretch flex flex-col gap-[10px] items-start left-[34px] top-[142px] w-[355px]">
         {/* DIGITAL DEFI PROFILE chrome badge */}
         <div className="border-[#006745] border-[0.313px] border-solid content-stretch flex gap-[2.5px] items-center justify-center overflow-clip px-[5px] py-[3.75px] relative rounded-bl-[2.5px] rounded-br-[20px] rounded-tl-[30px] rounded-tr-[2.5px] shadow-[0px_12.5px_14.813px_0px_rgba(0,0,0,0.1),0px_7.5px_10.5px_0px_rgba(0,0,0,0.1),0px_2.5px_3.375px_0px_rgba(0,0,0,0.2),0px_1.25px_2.5px_0px_rgba(0,0,0,0.1)] shrink-0 w-[120px]">
@@ -183,24 +185,27 @@ const FigmaDefiCard = forwardRef<HTMLDivElement, Props>(function FigmaDefiCard(
           {data.description}
         </p>
 
-        {/* QR — kept the dark green gradient bezel from Figma but removed the
-            aggressive `inset 0 -25px 68px white` shadow that was washing out
-            the entire QR pattern in browsers (Figma renders that shadow more
-            subtly than Chrome does). Replaced with a subtle bottom highlight. */}
-        <div className="border border-black border-solid content-stretch flex items-center justify-center p-[4px] relative rounded-[13px] shrink-0">
-          <div
-            aria-hidden
-            className="absolute inset-0 pointer-events-none rounded-[13px]"
-            style={{
-              backgroundImage:
-                "linear-gradient(180deg, rgb(3, 18, 5) 0%, rgb(62, 117, 83) 100%)",
-            }}
-          />
-          <div className="relative shrink-0 size-[66.841px] z-10">
-            <img alt="" className="absolute block max-w-none size-full" src={imgQrCode} />
-          </div>
-          <div className="absolute inset-[-0.5px] pointer-events-none rounded-[inherit] shadow-[inset_0_-1px_0_0_rgba(255,255,255,0.5)]" />
+      </div>
+
+      {/* QR code — positioned ABSOLUTELY at fixed coordinates so its location
+          is independent of the title/description content above. Sits clear of
+          the footer URL line at the bottom. */}
+      <div
+        className="absolute border border-black border-solid content-stretch flex items-center justify-center p-[4px] rounded-[13px]"
+        style={{ left: 34, top: 312 }}
+      >
+        <div
+          aria-hidden
+          className="absolute inset-0 pointer-events-none rounded-[13px]"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, rgb(3, 18, 5) 0%, rgb(62, 117, 83) 100%)",
+          }}
+        />
+        <div className="relative shrink-0 size-[66.841px] z-10">
+          <img alt="" className="absolute block max-w-none size-full" src={imgQrCode} />
         </div>
+        <div className="absolute inset-[-0.5px] pointer-events-none rounded-[inherit] shadow-[inset_0_-1px_0_0_rgba(255,255,255,0.5)]" />
       </div>
 
       {/* Background ellipses (top-right cluster) */}

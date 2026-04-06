@@ -281,12 +281,12 @@ export default function Index() {
                 </p>
               </motion.div>
 
-              {/* Theme toggle: Standard ↔ Platinum (only two options) */}
+              {/* Theme toggle: Standard ↔ Platinum (hover tooltip on locked) */}
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 }}
-                className="flex items-center mb-3 gap-1 p-1.5"
+                className="flex items-center mb-6 gap-1 p-1.5"
                 style={{
                   background: "rgba(255,255,255,0.06)",
                   border: "1px solid rgba(255,255,255,0.12)",
@@ -298,52 +298,62 @@ export default function Index() {
                   const active = cardTheme === t;
                   const label = t === "platinum" ? "✦ Platinum" : "Standard";
                   return (
-                    <button
-                      key={t}
-                      onClick={() => !locked && setCardTheme(t)}
-                      disabled={locked}
-                      className="flex items-center gap-1.5 px-6 py-2 text-sm font-bold tracking-[0.18em] uppercase transition-all"
-                      style={{
-                        background: active
-                          ? (t === "platinum" ? "#c8b4ff" : BRAND)
-                          : "transparent",
-                        color: active
-                          ? (t === "platinum" ? "#0c0c14" : "#000")
-                          : "#FFFFFF",
-                        borderRadius: "6px",
-                        fontFamily: FONT,
-                        opacity: locked ? 0.4 : active ? 1 : 0.9,
-                        cursor: locked ? "not-allowed" : "pointer",
-                        transition: "all 0.2s ease",
-                      }}
-                    >
-                      {locked ? "🔒 Platinum" : label}
-                    </button>
+                    <div key={t} className="relative group">
+                      <button
+                        onClick={() => !locked && setCardTheme(t)}
+                        disabled={locked}
+                        className="flex items-center gap-1.5 px-6 py-2 text-sm font-bold tracking-[0.18em] uppercase transition-all"
+                        style={{
+                          background: active
+                            ? (t === "platinum" ? "#c8b4ff" : BRAND)
+                            : "transparent",
+                          color: active
+                            ? (t === "platinum" ? "#0c0c14" : "#000")
+                            : "#FFFFFF",
+                          borderRadius: "6px",
+                          fontFamily: FONT,
+                          opacity: locked ? 0.4 : active ? 1 : 0.9,
+                          cursor: locked ? "not-allowed" : "pointer",
+                          transition: "all 0.2s ease",
+                        }}
+                      >
+                        {locked ? "🔒 Platinum" : label}
+                      </button>
+                      {/* Hover tooltip — only renders when this is the locked Platinum button */}
+                      {locked && (
+                        <div
+                          className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-3 px-4 py-2.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50"
+                          style={{
+                            background: "rgba(15, 18, 16, 0.96)",
+                            border: "1px solid rgba(255,255,255,0.15)",
+                            backdropFilter: "blur(10px)",
+                            boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          <p
+                            className="text-xs font-mono"
+                            style={{ color: "#FFFFFF", margin: 0 }}
+                          >
+                            Connect your X account to{" "}
+                            <span style={{ color: BRAND }}>Altura</span> and deposit funds to unlock.
+                          </p>
+                          {/* Tooltip arrow */}
+                          <div
+                            aria-hidden
+                            className="absolute left-1/2 -translate-x-1/2 -top-1.5 w-3 h-3 rotate-45"
+                            style={{
+                              background: "rgba(15, 18, 16, 0.96)",
+                              borderTop: "1px solid rgba(255,255,255,0.15)",
+                              borderLeft: "1px solid rgba(255,255,255,0.15)",
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </motion.div>
-
-              {/* Lock-state hint when user isn't an Altura holder */}
-              {!isAlturaHolder && (
-                <motion.p
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 0.65 }}
-                  transition={{ delay: 0.7 }}
-                  className="text-xs font-mono text-center mb-5 px-4"
-                  style={{ color: "#FFFFFF", maxWidth: 520 }}
-                >
-                  Connect your X account to{" "}
-                  <a
-                    href="https://alturanft.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: BRAND, textDecoration: "underline" }}
-                  >
-                    Altura
-                  </a>{" "}
-                  and deposit funds to unlock the Platinum PNL card.
-                </motion.p>
-              )}
 
               <CardScaler maxWidth={750}>
                 {cardTheme === "platinum" && pnl ? (
