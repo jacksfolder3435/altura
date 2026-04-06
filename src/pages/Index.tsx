@@ -1,8 +1,11 @@
 import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { parseUsername, generatePersona, type PersonaResult } from "@/lib/personaGenerator";
-import { fetchLatestTweets } from "@/lib/twitterApi";
-import { SocialCardAnimated, PlatinumCardAnimated, renderCardToCanvas, type CardTheme, type PnlData } from "@/components/SocialCard";
+import { fetchProfile, type AlturaSummary } from "@/lib/alturaApi";
+import { renderCardToCanvas, type CardTheme, type PnlData } from "@/components/SocialCard";
+import FigmaDefiCard from "@/components/figma/FigmaDefiCard";
+import FigmaPlatinumCard from "@/components/figma/FigmaPlatinumCard";
+import CardScaler from "@/components/figma/CardScaler";
 import AnalysisLoader from "@/components/AnalysisLoader";
 import BluOrbBackground from "@/components/BluOrbBackground";
 
@@ -12,16 +15,28 @@ const EXAMPLE_HANDLES = ["@sama", "@paulg", "@naval", "@lexfridman"];
 const BRAND = "#5EFFCA";
 const FONT = "'Funnel Display', 'Helvetica Neue', Helvetica, Arial, sans-serif";
 
-// Mock PNL data for demo — will be replaced by Altura API
-const MOCK_PNL: PnlData = {
-  totalDeposited: "$8,420",
-  currentValue: "$12,690",
-  pnl: "$4,270",
-  pnlPercent: "+50.7%",
-  apy: "82.4%",
-  vaultDays: 94,
-  isPositive: true,
-};
+function fmtUSDAmount(n: number): string {
+  return `$${Math.abs(n).toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
+}
+
+function fmtPct(n: number): string {
+  const sign = n >= 0 ? "+" : "";
+  return `${sign}${n.toFixed(1)}%`;
+}
+
+function alturaToPnl(a: AlturaSummary): PnlData {
+  return {
+    totalDeposited: fmtUSDAmount(a.totalDepositedUSD),
+    currentValue: fmtUSDAmount(a.currentValueUSD),
+    // Card prefixes its own +/- sign — we just give the magnitude
+    pnl: fmtUSDAmount(a.pnlUSD),
+    pnlPercent: fmtPct(a.pnlPercent),
+    // Altura API doesn't expose APY yet — show realised pnl % as a proxy
+    apy: fmtPct(a.pnlPercent),
+    vaultDays: 0,
+    isPositive: a.pnlUSD >= 0,
+  };
+}
 
 export default function Index() {
   const [stage, setStage] = useState<Stage>("landing");
@@ -31,6 +46,8 @@ export default function Index() {
   const [error, setError] = useState("");
   const [copyState, setCopyState] = useState<"idle" | "copying" | "done">("idle");
   const [cardTheme, setCardTheme] = useState<CardTheme>("dark");
+  const [pnl, setPnl] = useState<PnlData | null>(null);
+  const [isAlturaHolder, setIsAlturaHolder] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -48,10 +65,20 @@ export default function Index() {
 
   async function handleAnalysisComplete() {
     try {
-      const tweets = await fetchLatestTweets(username);
-      console.log(`Fetched ${tweets.length} tweets for @${username}:`, tweets);
+      const profile = await fetchProfile(username);
+      console.log(`[profile] @${username}:`, profile);
+      if (profile.altura?.isHolder) {
+        setIsAlturaHolder(true);
+        setPnl(alturaToPnl(profile.altura));
+        setCardTheme("platinum");
+      } else {
+        setIsAlturaHolder(false);
+        setPnl(null);
+      }
     } catch (e) {
-      console.warn(`X API unavailable for @${username} — running in demo mode:`, e);
+      console.warn(`[profile] backend unavailable for @${username} — demo mode:`, e);
+      setIsAlturaHolder(false);
+      setPnl(null);
     }
     setPersona(generatePersona(username));
     setStage("result");
@@ -61,6 +88,9 @@ export default function Index() {
     setStage("landing");
     setInput("");
     setPersona(null);
+    setPnl(null);
+    setIsAlturaHolder(false);
+    setCardTheme("dark");
     setTimeout(() => inputRef.current?.focus(), 100);
   }
 
@@ -241,20 +271,14 @@ export default function Index() {
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="text-center mb-8"
+                className="text-center mb-6"
               >
                 <p
-                  className="text-xs font-mono tracking-widest mb-2"
+                  className="text-xs font-mono tracking-widest"
                   style={{ color: "#FAFAFA", opacity: 0.4 }}
                 >
                   your digital defi profile is ready
                 </p>
-                <h2
-                  className="text-2xl"
-                  style={{ color: "#FAFAFA", fontWeight: 700 }}
-                >
-                  {persona.archetype.emoji} {persona.archetype.name}
-                </h2>
               </motion.div>
 
               {/* Theme toggle */}
@@ -265,32 +289,57 @@ export default function Index() {
                 className="flex items-center mb-4 p-1"
                 style={{ background: "rgba(94,255,202,0.08)", borderRadius: "8px" }}
               >
-                {(["dark", "light", "platinum"] as CardTheme[]).map((t) => (
-                  <button
-                    key={t}
-                    onClick={() => setCardTheme(t)}
-                    className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold tracking-widest uppercase transition-all"
-                    style={{
-                      background: cardTheme === t
-                        ? (t === "platinum" ? "#c8b4ff" : BRAND)
-                        : "transparent",
-                      color: cardTheme === t ? (t === "platinum" ? "#0c0c14" : "#fff") : "#FAFAFA",
-                      borderRadius: "0px",
-                      fontFamily: FONT,
-                      opacity: cardTheme === t ? 1 : 0.5,
-                      transition: "all 0.2s ease",
-                    }}
-                  >
-                    {t === "platinum" ? "✦ platinum" : t}
-                  </button>
-                ))}
+                {(["dark", "light", "platinum"] as CardTheme[]).map((t) => {
+                  const locked = t === "platinum" && !isAlturaHolder;
+                  return (
+                    <button
+                      key={t}
+                      onClick={() => !locked && setCardTheme(t)}
+                      disabled={locked}
+                      title={locked ? "Connect your X to Altura and deposit funds to unlock" : ""}
+                      className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold tracking-widest uppercase transition-all"
+                      style={{
+                        background: cardTheme === t
+                          ? (t === "platinum" ? "#c8b4ff" : BRAND)
+                          : "transparent",
+                        color: cardTheme === t ? (t === "platinum" ? "#0c0c14" : "#fff") : "#FAFAFA",
+                        borderRadius: "0px",
+                        fontFamily: FONT,
+                        opacity: locked ? 0.25 : cardTheme === t ? 1 : 0.5,
+                        cursor: locked ? "not-allowed" : "pointer",
+                        transition: "all 0.2s ease",
+                      }}
+                    >
+                      {t === "platinum" ? (locked ? "🔒 platinum" : "✦ platinum") : t}
+                    </button>
+                  );
+                })}
               </motion.div>
 
-              {cardTheme === "platinum" ? (
-                <PlatinumCardAnimated persona={persona} pnl={MOCK_PNL} cardRef={cardRef} />
-              ) : (
-                <SocialCardAnimated persona={persona} cardRef={cardRef} theme={cardTheme} />
-              )}
+              <CardScaler maxWidth={750}>
+                {cardTheme === "platinum" && pnl ? (
+                  <FigmaPlatinumCard
+                    ref={cardRef}
+                    data={{
+                      archetype: persona.archetype.name,
+                      description: persona.archetype.description,
+                      pnlValue: pnl.pnl,
+                      pnlPercent: pnl.pnlPercent,
+                      apyValue: pnl.apy,
+                      username: persona.username,
+                    }}
+                  />
+                ) : (
+                  <FigmaDefiCard
+                    ref={cardRef}
+                    data={{
+                      archetype: persona.archetype.name,
+                      description: persona.archetype.description,
+                      username: persona.username,
+                    }}
+                  />
+                )}
+              </CardScaler>
 
               {/* Action buttons */}
               <motion.div

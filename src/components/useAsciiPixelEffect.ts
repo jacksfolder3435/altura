@@ -191,7 +191,10 @@ export function useAsciiPixelEffect(imageSrc: string, options: AsciiPixelOptions
           const cell = cells[row]?.[col];
           if (!cell || !cell.subject) continue;
 
-          let { r, g, b, lum, char } = cell;
+          // r/g/b are reassigned by the shine sweep below, so they must remain `let`
+
+          let { r, g, b } = cell;
+          const { lum, char } = cell;
           let alpha = (cell.a / 255) * Math.max(0.3, 1 - lum * 0.5);
 
           // Subtle breathing animation

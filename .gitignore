@@ -29,3 +29,8 @@ dist-ssr
 *.sw?
 .claude/
 .vercel
+.mcp.json
+
+# Server
+server/node_modules
+server/dist

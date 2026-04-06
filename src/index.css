@@ -7,6 +7,22 @@
 }
 
 @font-face {
+  font-family: 'Geist Mono';
+  src: url('/fonts/GeistMono-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('/fonts/GeistMono-Medium.otf') format('opentype');
+  font-weight: 500 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
   font-family: 'Neue Haas Unica';
   src: url('/fonts/NeueHaasUnicaPro-Light.ttf') format('truetype');
   font-weight: 300;

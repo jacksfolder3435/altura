@@ -34,7 +34,29 @@ interface ThemeConfig {
   watermark: string;
 }
 
+const PLATINUM_THEME: ThemeConfig = {
+  cardBg: "#0c0c14",
+  canvasBg: [12, 12, 20],
+  canvasBase: [80, 70, 120],
+  outerDotFill: "rgb(25,22,40)",
+  outerDotAlpha: 0.05,
+  orbAlpha: 0.25,
+  logoFill: "#FAFAFA",
+  logoOpacity: 0.9,
+  textPrimary: "#FAFAFA",
+  textUrl: "rgba(250,250,250,0.75)",
+  avatarBg: "rgba(200,180,255,0.18)",
+  badgeBorder: "rgba(200,180,255,0.5)",
+  badgeColor: "rgba(200,180,255,0.95)",
+  archetypeName: "#c8b4ff",
+  description: "rgba(250,250,250,0.85)",
+  metricLabel: "rgba(250,250,250,0.5)",
+  divider: "rgba(200,180,255,0.15)",
+  watermark: "rgba(250,250,250,0.2)",
+};
+
 const THEMES: Record<CardTheme, ThemeConfig> = {
+  platinum: PLATINUM_THEME,
   dark: {
     cardBg: "#0a0a0a",
     canvasBg: [10, 10, 10],
@@ -430,27 +452,6 @@ interface PlatinumCardProps {
   pnl: PnlData;
   cardRef?: React.RefObject<HTMLDivElement>;
 }
-
-const PLATINUM_THEME: ThemeConfig = {
-  cardBg: "#0c0c14",
-  canvasBg: [12, 12, 20],
-  canvasBase: [80, 70, 120],
-  outerDotFill: "rgb(25,22,40)",
-  outerDotAlpha: 0.05,
-  orbAlpha: 0.25,
-  logoFill: "#FAFAFA",
-  logoOpacity: 0.9,
-  textPrimary: "#FAFAFA",
-  textUrl: "rgba(250,250,250,0.75)",
-  avatarBg: "rgba(200,180,255,0.18)",
-  badgeBorder: "rgba(200,180,255,0.5)",
-  badgeColor: "rgba(200,180,255,0.95)",
-  archetypeName: "#c8b4ff",
-  description: "rgba(250,250,250,0.85)",
-  metricLabel: "rgba(250,250,250,0.5)",
-  divider: "rgba(200,180,255,0.15)",
-  watermark: "rgba(250,250,250,0.2)",
-};
 
 export function PlatinumCard({ persona, pnl, cardRef }: PlatinumCardProps) {
   const { archetype, username } = persona;
