@@ -18,15 +18,6 @@ const imgVector2 = `${A}/standard-mark.svg`;
 const imgVector3 = `${A}/standard-wordmark.svg`;
 const imgRectangle34625296 = `${A}/standard-rect.svg`;
 const imgQrCode = `${A}/standard-qr.svg`;
-const imgEllipse43718 = `${A}/standard-ellipse-43718.svg`;
-const imgEllipse43719 = `${A}/standard-ellipse-43719.svg`;
-const imgEllipse43720 = `${A}/standard-ellipse-43720.svg`;
-const imgEllipse43721 = `${A}/standard-ellipse-43721.svg`;
-const imgEllipse43722 = `${A}/standard-ellipse-43722.svg`;
-const imgEllipse43723 = `${A}/standard-ellipse-43723.svg`;
-const imgEllipse43724 = `${A}/standard-ellipse-43724.svg`;
-const imgEllipse43725 = `${A}/standard-ellipse-43725.svg`;
-const imgEllipse43726 = `${A}/standard-ellipse-43726.svg`;
 
 export interface DefiCardData {
   archetype: string;
@@ -211,106 +202,6 @@ const FigmaDefiCard = forwardRef<HTMLDivElement, Props>(function FigmaDefiCard(
           <img alt="" className="absolute block max-w-none size-full" src={imgQrCode} />
         </div>
         <div className="absolute inset-[-0.5px] pointer-events-none rounded-[inherit] shadow-[inset_0_-1px_0_0_rgba(255,255,255,0.5)]" />
-      </div>
-
-      {/* Background ellipses (top-right cluster) */}
-      <div className="absolute contents left-[246px] top-[-151px]">
-        <div className="absolute flex h-[1003.671px] items-center justify-center left-[246px] mix-blend-overlay top-[-151px] w-[920.667px]">
-          <div className="flex-none rotate-[24.45deg] scale-y-[0.98] skew-x-[-12.51deg]">
-            <div className="h-[1113.031px] relative w-[276.203px]">
-              <div className="absolute inset-[-7.37%_-29.69%]">
-                <img alt="" className="block max-w-none size-full" src={imgEllipse43718} />
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="absolute flex h-[556.564px] items-center justify-center left-[445.45px] mix-blend-overlay top-[72.55px] w-[521.774px]">
-          <div className="flex-none rotate-[24.45deg] scale-y-[0.98] skew-x-[-12.51deg]">
-            <div className="h-[607.49px] relative w-[171.925px]">
-              <div className="absolute inset-[-13.5%_-47.7%]">
-                <img alt="" className="block max-w-none size-full" src={imgEllipse43719} />
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="absolute flex h-[372.671px] items-center justify-center left-[541.02px] mix-blend-overlay top-[164.5px] w-[330.629px]">
-          <div className="flex-none rotate-[24.45deg] scale-y-[0.98] skew-x-[-12.51deg]">
-            <div className="h-[422.981px] relative w-[83.82px]">
-              <div className="absolute inset-[-12.53%_-63.23%]">
-                <img alt="" className="block max-w-none size-full" src={imgEllipse43720} />
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="absolute flex h-[195.853px] items-center justify-center left-[619.45px] mix-blend-overlay top-[252.91px] w-[173.758px]">
-          <div className="flex-none rotate-[24.45deg] scale-y-[0.98] skew-x-[-12.51deg]">
-            <div className="h-[222.293px] relative w-[44.05px]">
-              <div className="absolute inset-[-21.32%_-107.6%]">
-                <img alt="" className="block max-w-none size-full" src={imgEllipse43721} />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Background ellipses (large faint left cluster) */}
-      <div className="absolute contents left-[-429px] top-[-799px]">
-        <div className="absolute flex h-[1708.637px] items-center justify-center left-[-429px] mix-blend-overlay top-[-799px] w-[1567.333px]">
-          <div className="flex-none rotate-[24.45deg] scale-y-[0.98] skew-x-[-12.51deg]">
-            <div className="h-[1894.812px] relative w-[470.204px]">
-              <div className="absolute inset-[-7.37%_-29.69%]">
-                <img alt="" className="block max-w-none size-full" src={imgEllipse43722} />
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="absolute flex h-[947.488px] items-center justify-center left-[87px] mix-blend-overlay top-[-418.42px] w-[888.262px]">
-          <div className="flex-none rotate-[24.45deg] scale-y-[0.98] skew-x-[-12.51deg]">
-            <div className="h-[1034.184px] relative w-[292.683px]">
-              <div className="absolute inset-[-13.5%_-47.7%]">
-                <img alt="" className="block max-w-none size-full" src={imgEllipse43723} />
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="absolute flex h-[634.431px] items-center justify-center left-[218px] mix-blend-overlay top-[-261.9px] w-[562.859px]">
-          <div className="flex-none rotate-[24.45deg] scale-y-[0.98] skew-x-[-12.51deg]">
-            <div className="h-[720.078px] relative w-[142.694px]">
-              <div className="absolute inset-[-12.53%_-63.23%]">
-                <img alt="" className="block max-w-none size-full" src={imgEllipse43724} />
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="absolute flex h-[333.418px] items-center justify-center left-[206.76px] mix-blend-overlay top-[-111.39px] w-[295.804px]">
-          <div className="flex-none rotate-[24.45deg] scale-y-[0.98] skew-x-[-12.51deg]">
-            <div className="h-[378.429px] relative w-[74.991px]">
-              <div className="absolute inset-[-21.32%_-107.6%]">
-                <img alt="" className="block max-w-none size-full" src={imgEllipse43725} />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Outer rotated ellipses */}
-      <div className="absolute flex h-[564.11px] items-center justify-center left-[305.87px] mix-blend-overlay top-[-6.05px] w-[423.261px]">
-        <div className="flex-none rotate-[30deg]">
-          <div className="h-[553.806px] relative w-[169px]">
-            <div className="absolute inset-[-20.95%_-68.64%]">
-              <img alt="" className="block max-w-none size-full" src={imgEllipse43726} />
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="absolute flex h-[564.11px] items-center justify-center left-[-190px] mix-blend-overlay top-[-282px] w-[423.261px]">
-        <div className="flex-none rotate-[30deg]">
-          <div className="h-[553.806px] relative w-[169px]">
-            <div className="absolute inset-[-20.95%_-68.64%]">
-              <img alt="" className="block max-w-none size-full" src={imgEllipse43726} />
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Subtle outer chrome bezel */}
