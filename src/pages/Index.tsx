@@ -274,10 +274,10 @@ export default function Index() {
                 className="text-center mb-6"
               >
                 <p
-                  className="text-xs font-mono tracking-widest"
-                  style={{ color: "#FAFAFA", opacity: 0.4 }}
+                  className="text-sm font-mono tracking-[0.2em]"
+                  style={{ color: "#FFFFFF", opacity: 0.95 }}
                 >
-                  your digital defi profile is ready
+                  YOUR DIGITAL DEFI PROFILE IS READY
                 </p>
               </motion.div>
 
@@ -286,26 +286,33 @@ export default function Index() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 }}
-                className="flex items-center mb-4 p-1"
-                style={{ background: "rgba(94,255,202,0.08)", borderRadius: "8px" }}
+                className="flex items-center mb-6 gap-1 p-1.5"
+                style={{
+                  background: "rgba(255,255,255,0.06)",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  borderRadius: "10px",
+                }}
               >
                 {(["dark", "light", "platinum"] as CardTheme[]).map((t) => {
                   const locked = t === "platinum" && !isAlturaHolder;
+                  const active = cardTheme === t;
                   return (
                     <button
                       key={t}
                       onClick={() => !locked && setCardTheme(t)}
                       disabled={locked}
                       title={locked ? "Connect your X to Altura and deposit funds to unlock" : ""}
-                      className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold tracking-widest uppercase transition-all"
+                      className="flex items-center gap-1.5 px-5 py-2 text-sm font-bold tracking-[0.18em] uppercase transition-all"
                       style={{
-                        background: cardTheme === t
+                        background: active
                           ? (t === "platinum" ? "#c8b4ff" : BRAND)
                           : "transparent",
-                        color: cardTheme === t ? (t === "platinum" ? "#0c0c14" : "#fff") : "#FAFAFA",
-                        borderRadius: "0px",
+                        color: active
+                          ? (t === "platinum" ? "#0c0c14" : "#000")
+                          : "#FFFFFF",
+                        borderRadius: "6px",
                         fontFamily: FONT,
-                        opacity: locked ? 0.25 : cardTheme === t ? 1 : 0.5,
+                        opacity: locked ? 0.35 : active ? 1 : 0.85,
                         cursor: locked ? "not-allowed" : "pointer",
                         transition: "all 0.2s ease",
                       }}

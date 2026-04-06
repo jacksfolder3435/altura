@@ -1,6 +1,6 @@
 <svg preserveAspectRatio="none" width="100%" height="100%" overflow="visible" style="display: block;" viewBox="0 0 579.662 865.569" fill="none" xmlns="http://www.w3.org/2000/svg">
 <g id="Ellipse 170" opacity="0.5" filter="url(#filter0_f_0_10)" style="mix-blend-mode:overlay">
-<ellipse cx="289.831" cy="432.784" rx="106.854" ry="249.807" fill="white"/>
+<ellipse cx="289.831" cy="432.784" rx="106.854" ry="249.807" fill="black"/>
 </g>
 <defs>
 <filter id="filter0_f_0_10" x="0" y="0" width="579.662" height="865.569" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">

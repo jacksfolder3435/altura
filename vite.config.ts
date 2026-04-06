@@ -12,18 +12,14 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
     proxy: {
-      '/api/twitter': {
-        target: 'https://api.twitter.com',
+      // Backend (Altura snapshot + X) — same path the production nginx proxies
+      '/api': {
+        target: 'http://127.0.0.1:8787',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/twitter/, ''),
-        configure: (proxy) => {
-          proxy.on('proxyReq', (proxyReq) => {
-            const token = process.env.X_BEARER_TOKEN;
-            if (token) {
-              proxyReq.setHeader('Authorization', `Bearer ${token}`);
-            }
-          });
-        },
+      },
+      '/health': {
+        target: 'http://127.0.0.1:8787',
+        changeOrigin: true,
       },
     },
   },
