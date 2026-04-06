@@ -47,9 +47,13 @@ export interface ProfileResponse {
   xConfigured: boolean;
 }
 
+/**
+ * In production the backend is reverse-proxied behind the same origin under
+ * `/api/*`, so we just call relative URLs. In dev, set VITE_BACKEND_URL in
+ * `.env.local` to e.g. `http://localhost:8787` to bypass the proxy.
+ */
 const BACKEND_URL =
-  (import.meta.env.VITE_BACKEND_URL as string | undefined) ??
-  "http://localhost:8787";
+  (import.meta.env.VITE_BACKEND_URL as string | undefined) ?? "";
 
 export async function fetchProfile(username: string): Promise<ProfileResponse> {
   const cleaned = username.replace(/^@/, "").trim();
