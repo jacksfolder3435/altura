@@ -11,8 +11,6 @@
 import { forwardRef } from "react";
 
 const A = "/figma";
-const imgVector = `${A}/standard-glow-1.svg`;
-const imgVector1 = `${A}/standard-glow-2.svg`;
 const imgLine1 = `${A}/standard-line.svg`;
 const imgVector2 = `${A}/standard-mark.svg`;
 const imgVector3 = `${A}/standard-wordmark.svg`;
@@ -51,15 +49,8 @@ const FigmaDefiCard = forwardRef<HTMLDivElement, Props>(function FigmaDefiCard(
         className="absolute bg-[#141414] inset-0 pointer-events-none rounded-[15px]"
       />
 
-      {/* Inner panel */}
-      <div className="absolute bg-[#000201] h-[432px] left-0 opacity-80 overflow-clip rounded-[10px] top-0 w-[750px]">
-        <div className="absolute h-[355px] left-[355px] mix-blend-overlay top-[-31px] w-[507px]">
-          <img alt="" className="absolute block max-w-none size-full" src={imgVector} />
-        </div>
-        <div className="absolute h-[355px] left-[355px] mix-blend-plus-lighter top-[-31px] w-[507px]">
-          <img alt="" className="absolute block max-w-none size-full" src={imgVector1} />
-        </div>
-      </div>
+      {/* Inner panel — clean dark green, no glow vectors */}
+      <div className="absolute bg-[#000201] h-[432px] left-0 opacity-80 overflow-clip rounded-[10px] top-0 w-[750px]" />
 
       {/* Footer line */}
       <div className="-translate-x-1/2 absolute h-0 left-[calc(50%-42px)] top-[383px] w-[598px]">
