@@ -143,19 +143,23 @@ const FigmaDefiCard = forwardRef<HTMLDivElement, Props>(function FigmaDefiCard(
           <div className="absolute inset-0 pointer-events-none rounded-[inherit] shadow-[inset_0px_1.25px_1.25px_0px_rgba(0,0,0,0.25)]" />
         </div>
 
-        {/* Archetype name — two-layer text (shadow + fill) */}
+        {/* Archetype name — two-layer text (shadow + fill).
+            CSS line-height 0.9 clips ascenders when used with bg-clip-text;
+            use 1.1 + a small top padding so the gradient text renders fully. */}
         <div
-          className="grid-cols-[max-content] grid-rows-[max-content] inline-grid leading-[0] not-italic place-items-start relative shrink-0 text-[transparent] text-center whitespace-nowrap"
+          className="grid-cols-[max-content] grid-rows-[max-content] inline-grid not-italic place-items-start relative shrink-0 text-[transparent] text-center whitespace-nowrap"
           style={{
             fontFamily: "'Funnel Display', sans-serif",
             fontWeight: 400,
             fontSize: titleSize,
             letterSpacing: `${(-1.3259 / 66.297) * titleSize}px`,
+            paddingTop: "0.05em",
           }}
         >
           <p
-            className="bg-clip-text col-1 leading-[0.9] ml-0 mt-0 opacity-50 relative row-1"
+            className="bg-clip-text col-1 ml-0 mt-0 opacity-50 relative row-1"
             style={{
+              lineHeight: 1.1,
               backgroundImage:
                 "linear-gradient(215.03deg, rgba(0, 0, 0, 0) 177.59%, rgba(0, 0, 0, 0.66) 125.73%, rgba(0, 0, 0, 0) 97.51%, rgba(0, 0, 0, 0.66) 75.41%, rgba(0, 0, 0, 0) 27.73%, rgba(0, 0, 0, 0.66) 6.3%, rgba(0, 0, 0, 0) 66.95%, rgba(0, 0, 0, 0.578) 110.82%), linear-gradient(90deg, rgba(0, 0, 0, 0.24) 0%, rgba(0, 0, 0, 0.24) 100%)",
             }}
@@ -163,8 +167,9 @@ const FigmaDefiCard = forwardRef<HTMLDivElement, Props>(function FigmaDefiCard(
             {data.archetype}
           </p>
           <p
-            className="bg-clip-text col-1 leading-[0.9] ml-0 mt-0 relative row-1"
+            className="bg-clip-text col-1 ml-0 mt-0 relative row-1"
             style={{
+              lineHeight: 1.1,
               backgroundImage:
                 "linear-gradient(85.28deg, rgb(85, 130, 100) 10.518%, rgb(56, 92, 68) 158.48%)",
             }}

@@ -218,14 +218,20 @@ const FigmaPlatinumCard = forwardRef<HTMLDivElement, Props>(function FigmaPlatin
         <div className="absolute inset-0 pointer-events-none rounded-[inherit] shadow-[inset_0px_1.25px_1.25px_0px_rgba(0,0,0,0.25)]" />
       </div>
 
-      {/* Title: archetype name */}
+      {/* Title: archetype name. Note: Figma uses leading 0.91 but in CSS that
+          clips ascenders (cap height of B, etc.) when combined with
+          `background-clip: text`. Use leading 1.1 + a little top padding so
+          the gradient text renders fully. */}
       <p
-        className="absolute bg-clip-text leading-[0.91] left-[32px] not-italic text-[transparent] top-[71px] tracking-[-1.0255px] whitespace-nowrap overflow-hidden"
+        className="absolute bg-clip-text left-[32px] not-italic text-[transparent] tracking-[-1.0255px] whitespace-nowrap overflow-hidden"
         style={{
           fontFamily: "'Funnel Display', sans-serif",
           fontWeight: 500,
           fontSize: titleSize,
+          lineHeight: 1.1,
+          top: 65,
           right: 150,
+          paddingTop: "0.05em",
           textOverflow: "ellipsis",
           backgroundImage:
             "linear-gradient(-84.36deg, rgb(255, 255, 255) 1.8%, rgb(175, 184, 181) 64.65%, rgb(23, 33, 30) 117.62%)",
@@ -249,7 +255,7 @@ const FigmaPlatinumCard = forwardRef<HTMLDivElement, Props>(function FigmaPlatin
       {/* PNL block (left): big value + label */}
       <div className="absolute content-stretch flex flex-col gap-[16.981px] items-start left-[32px] text-[transparent] top-[262.34px]">
         <p
-          className="bg-clip-text leading-[0.9] not-italic relative shrink-0 text-[71.544px] text-center tracking-[-1.4309px] whitespace-nowrap"
+          className="bg-clip-text leading-[1.05] not-italic relative shrink-0 text-[71.544px] text-center tracking-[-1.4309px] whitespace-nowrap"
           style={{
             fontFamily: "'Funnel Display', sans-serif",
             fontWeight: 400,
@@ -273,7 +279,7 @@ const FigmaPlatinumCard = forwardRef<HTMLDivElement, Props>(function FigmaPlatin
 
       {/* Percent (next to PNL value) */}
       <p
-        className="-translate-x-1/2 absolute bg-clip-text leading-[0.9] left-[351.01px] not-italic text-[27.792px] text-[transparent] text-center top-[294.13px] tracking-[-0.5558px] whitespace-nowrap"
+        className="-translate-x-1/2 absolute bg-clip-text leading-[1.05] left-[351.01px] not-italic text-[27.792px] text-[transparent] text-center top-[294.13px] tracking-[-0.5558px] whitespace-nowrap"
         style={{
           fontFamily: "'Funnel Display', sans-serif",
           fontWeight: 400,
@@ -287,7 +293,7 @@ const FigmaPlatinumCard = forwardRef<HTMLDivElement, Props>(function FigmaPlatin
       {/* APY block (right) */}
       <div className="absolute content-stretch flex flex-col gap-[16.981px] items-start left-[464.45px] text-[transparent] top-[261px]">
         <p
-          className="bg-clip-text leading-[0.9] not-italic relative shrink-0 text-[71.544px] text-center tracking-[-1.4309px] whitespace-nowrap"
+          className="bg-clip-text leading-[1.05] not-italic relative shrink-0 text-[71.544px] text-center tracking-[-1.4309px] whitespace-nowrap"
           style={{
             fontFamily: "'Funnel Display', sans-serif",
             fontWeight: 400,
