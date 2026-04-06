@@ -59,15 +59,15 @@ const FigmaDefiCard = forwardRef<HTMLDivElement, Props>(function FigmaDefiCard(
         </div>
       </div>
 
-      {/* Footer URL — sits BELOW the QR on its own line. QR ends at y=387,
-          this is at y=400 with extra spacing. */}
+      {/* Footer URL — bottom-left, in the green brand color, below the line. */}
       <p
-        className="absolute bg-clip-text font-medium leading-[10px] left-[34px] opacity-55 text-[8px] text-[transparent] uppercase whitespace-nowrap"
+        className="absolute font-medium leading-[10px] left-[34px] text-[9px] uppercase whitespace-nowrap"
         style={{
           fontFamily: "'Geist Mono', monospace",
-          top: 400,
-          backgroundImage:
-            "linear-gradient(172.86deg, rgb(186, 209, 193) 10.448%, rgb(220, 235, 226) 53.323%, rgb(255, 255, 255) 73.433%)",
+          top: 405,
+          color: "#5EFFCA",
+          opacity: 0.85,
+          margin: 0,
         }}
       >
         {data.username
@@ -125,48 +125,31 @@ const FigmaDefiCard = forwardRef<HTMLDivElement, Props>(function FigmaDefiCard(
           <div className="absolute inset-0 pointer-events-none rounded-[inherit] shadow-[inset_0px_1.25px_1.25px_0px_rgba(0,0,0,0.25)]" />
         </div>
 
-        {/* Archetype name — two-layer text (shadow + fill).
-            CSS line-height 0.9 clips ascenders when used with bg-clip-text;
-            use 1.1 + a small top padding so the gradient text renders fully. */}
-        <div
-          className="grid-cols-[max-content] grid-rows-[max-content] inline-grid not-italic place-items-start relative shrink-0 text-[transparent] text-center whitespace-nowrap"
+        {/* Archetype name — solid WHITE per Figma. */}
+        <p
+          className="not-italic relative shrink-0 whitespace-nowrap"
           style={{
             fontFamily: "'Funnel Display', sans-serif",
             fontWeight: 400,
             fontSize: titleSize,
+            lineHeight: 1.1,
             letterSpacing: `${(-1.3259 / 66.297) * titleSize}px`,
+            color: "#FFFFFF",
+            margin: 0,
             paddingTop: "0.05em",
           }}
         >
-          <p
-            className="bg-clip-text col-1 ml-0 mt-0 opacity-50 relative row-1"
-            style={{
-              lineHeight: 1.1,
-              backgroundImage:
-                "linear-gradient(215.03deg, rgba(0, 0, 0, 0) 177.59%, rgba(0, 0, 0, 0.66) 125.73%, rgba(0, 0, 0, 0) 97.51%, rgba(0, 0, 0, 0.66) 75.41%, rgba(0, 0, 0, 0) 27.73%, rgba(0, 0, 0, 0.66) 6.3%, rgba(0, 0, 0, 0) 66.95%, rgba(0, 0, 0, 0.578) 110.82%), linear-gradient(90deg, rgba(0, 0, 0, 0.24) 0%, rgba(0, 0, 0, 0.24) 100%)",
-            }}
-          >
-            {data.archetype}
-          </p>
-          <p
-            className="bg-clip-text col-1 ml-0 mt-0 relative row-1"
-            style={{
-              lineHeight: 1.1,
-              backgroundImage:
-                "linear-gradient(85.28deg, rgb(85, 130, 100) 10.518%, rgb(56, 92, 68) 158.48%)",
-            }}
-          >
-            {data.archetype}
-          </p>
-        </div>
+          {data.archetype}
+        </p>
 
-        {/* Description */}
+        {/* Description — solid white text per Figma. */}
         <p
-          className="bg-clip-text font-medium leading-[21px] opacity-60 relative shrink-0 text-[12px] text-[transparent] uppercase w-[322px]"
+          className="font-medium leading-[21px] relative shrink-0 text-[12px] uppercase w-[400px]"
           style={{
             fontFamily: "'Geist Mono', monospace",
-            backgroundImage:
-              "linear-gradient(167.79deg, rgb(95, 107, 99) 10.448%, rgb(186, 209, 193) 53.323%, rgb(255, 255, 255) 73.433%)",
+            color: "#FFFFFF",
+            opacity: 0.9,
+            margin: 0,
           }}
         >
           {data.description}
@@ -174,12 +157,10 @@ const FigmaDefiCard = forwardRef<HTMLDivElement, Props>(function FigmaDefiCard(
 
       </div>
 
-      {/* QR code — positioned ABSOLUTELY at fixed coordinates so its location
-          is independent of the title/description content above. Sits clear of
-          the footer URL line at the bottom. */}
+      {/* QR code — bottom-left, just above the divider line per Figma. */}
       <div
         className="absolute border border-black border-solid content-stretch flex items-center justify-center p-[4px] rounded-[13px]"
-        style={{ left: 34, top: 312 }}
+        style={{ left: 34, top: 295 }}
       >
         <div
           aria-hidden
