@@ -281,28 +281,28 @@ export default function Index() {
                 </p>
               </motion.div>
 
-              {/* Theme toggle */}
+              {/* Theme toggle: Standard ↔ Platinum (only two options) */}
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 }}
-                className="flex items-center mb-6 gap-1 p-1.5"
+                className="flex items-center mb-3 gap-1 p-1.5"
                 style={{
                   background: "rgba(255,255,255,0.06)",
                   border: "1px solid rgba(255,255,255,0.12)",
                   borderRadius: "10px",
                 }}
               >
-                {(["dark", "light", "platinum"] as CardTheme[]).map((t) => {
+                {(["dark", "platinum"] as CardTheme[]).map((t) => {
                   const locked = t === "platinum" && !isAlturaHolder;
                   const active = cardTheme === t;
+                  const label = t === "platinum" ? "✦ Platinum" : "Standard";
                   return (
                     <button
                       key={t}
                       onClick={() => !locked && setCardTheme(t)}
                       disabled={locked}
-                      title={locked ? "Connect your X to Altura and deposit funds to unlock" : ""}
-                      className="flex items-center gap-1.5 px-5 py-2 text-sm font-bold tracking-[0.18em] uppercase transition-all"
+                      className="flex items-center gap-1.5 px-6 py-2 text-sm font-bold tracking-[0.18em] uppercase transition-all"
                       style={{
                         background: active
                           ? (t === "platinum" ? "#c8b4ff" : BRAND)
@@ -312,16 +312,38 @@ export default function Index() {
                           : "#FFFFFF",
                         borderRadius: "6px",
                         fontFamily: FONT,
-                        opacity: locked ? 0.35 : active ? 1 : 0.85,
+                        opacity: locked ? 0.4 : active ? 1 : 0.9,
                         cursor: locked ? "not-allowed" : "pointer",
                         transition: "all 0.2s ease",
                       }}
                     >
-                      {t === "platinum" ? (locked ? "🔒 platinum" : "✦ platinum") : t}
+                      {locked ? "🔒 Platinum" : label}
                     </button>
                   );
                 })}
               </motion.div>
+
+              {/* Lock-state hint when user isn't an Altura holder */}
+              {!isAlturaHolder && (
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 0.65 }}
+                  transition={{ delay: 0.7 }}
+                  className="text-xs font-mono text-center mb-5 px-4"
+                  style={{ color: "#FFFFFF", maxWidth: 520 }}
+                >
+                  Connect your X account to{" "}
+                  <a
+                    href="https://alturanft.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: BRAND, textDecoration: "underline" }}
+                  >
+                    Altura
+                  </a>{" "}
+                  and deposit funds to unlock the Platinum PNL card.
+                </motion.p>
+              )}
 
               <CardScaler maxWidth={750}>
                 {cardTheme === "platinum" && pnl ? (

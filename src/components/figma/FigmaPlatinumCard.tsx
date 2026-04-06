@@ -319,10 +319,10 @@ const FigmaPlatinumCard = forwardRef<HTMLDivElement, Props>(function FigmaPlatin
               "linear-gradient(90deg, rgba(0, 0, 0, 0.27) 0%, rgba(0, 0, 0, 0.27) 100%), linear-gradient(180deg, rgb(3, 18, 5) 0%, rgb(62, 117, 83) 100%)",
           }}
         />
-        <div className="relative shrink-0 size-[66.841px]">
+        <div className="relative shrink-0 size-[66.841px] z-10">
           <img alt="" className="absolute block max-w-none size-full" src={imgQrCode} />
         </div>
-        <div className="absolute inset-[-0.5px] pointer-events-none rounded-[inherit] shadow-[inset_0px_-0.5px_0px_0px_white,inset_0px_-25px_68px_0px_white]" />
+        <div className="absolute inset-[-0.5px] pointer-events-none rounded-[inherit] shadow-[inset_0_-1px_0_0_rgba(255,255,255,0.5)]" />
       </div>
 
       {/* Chrome bezel (top-left inset) */}

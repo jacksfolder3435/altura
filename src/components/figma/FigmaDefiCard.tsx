@@ -77,13 +77,14 @@ const FigmaDefiCard = forwardRef<HTMLDivElement, Props>(function FigmaDefiCard(
         </div>
       </div>
 
-      {/* Footer URL */}
+      {/* Footer URL — sits below the QR on its own line, doesn't overlap */}
       <p
-        className="-translate-x-1/2 absolute bg-clip-text font-medium leading-[8px] left-[calc(50%-288px)] opacity-20 text-[8px] text-[transparent] text-center top-[395px] uppercase whitespace-nowrap"
+        className="absolute bg-clip-text font-medium leading-[10px] left-[34px] opacity-50 text-[9px] text-[transparent] uppercase whitespace-nowrap"
         style={{
           fontFamily: "'Geist Mono', monospace",
+          top: 410,
           backgroundImage:
-            "linear-gradient(172.86deg, rgb(95, 107, 99) 10.448%, rgb(186, 209, 193) 53.323%, rgb(255, 255, 255) 73.433%)",
+            "linear-gradient(172.86deg, rgb(186, 209, 193) 10.448%, rgb(220, 235, 226) 53.323%, rgb(255, 255, 255) 73.433%)",
         }}
       >
         {data.username
@@ -182,20 +183,23 @@ const FigmaDefiCard = forwardRef<HTMLDivElement, Props>(function FigmaDefiCard(
           {data.description}
         </p>
 
-        {/* QR */}
+        {/* QR — kept the dark green gradient bezel from Figma but removed the
+            aggressive `inset 0 -25px 68px white` shadow that was washing out
+            the entire QR pattern in browsers (Figma renders that shadow more
+            subtly than Chrome does). Replaced with a subtle bottom highlight. */}
         <div className="border border-black border-solid content-stretch flex items-center justify-center p-[4px] relative rounded-[13px] shrink-0">
           <div
             aria-hidden
             className="absolute inset-0 pointer-events-none rounded-[13px]"
             style={{
               backgroundImage:
-                "linear-gradient(90deg, rgba(0, 0, 0, 0.27) 0%, rgba(0, 0, 0, 0.27) 100%), linear-gradient(180deg, rgb(3, 18, 5) 0%, rgb(62, 117, 83) 100%)",
+                "linear-gradient(180deg, rgb(3, 18, 5) 0%, rgb(62, 117, 83) 100%)",
             }}
           />
-          <div className="relative shrink-0 size-[66.841px]">
+          <div className="relative shrink-0 size-[66.841px] z-10">
             <img alt="" className="absolute block max-w-none size-full" src={imgQrCode} />
           </div>
-          <div className="absolute inset-[-0.5px] pointer-events-none rounded-[inherit] shadow-[inset_0px_-0.5px_0px_0px_white,inset_0px_-25px_68px_0px_white]" />
+          <div className="absolute inset-[-0.5px] pointer-events-none rounded-[inherit] shadow-[inset_0_-1px_0_0_rgba(255,255,255,0.5)]" />
         </div>
       </div>
 
