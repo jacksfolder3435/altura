@@ -70,9 +70,15 @@ export default function Index() {
   }
 
   async function handleAnalysisComplete() {
+    // Always start with a hash-based persona as a fallback so we never show a
+    // broken state if the backend is unreachable.
+    let resolvedPersona: PersonaResult = generatePersona(username);
+
     try {
       const profile = await fetchProfile(username);
       console.log(`[profile] @${username}:`, profile);
+
+      // Holder state & PnL
       if (profile.altura?.isHolder) {
         setIsAlturaHolder(true);
         setPnl(alturaToPnl(profile.altura));
@@ -81,12 +87,36 @@ export default function Index() {
         setIsAlturaHolder(false);
         setPnl(null);
       }
+
+      // Data-driven persona from the backend engine — overrides the local
+      // hash-based fallback. The backend returns the archetype (name, emoji,
+      // description) but not the other flavour fields (traits, topics, stats,
+      // gradient), so we merge: keep those from the local generator, swap in
+      // the real archetype.
+      if (profile.persona?.archetype) {
+        const a = profile.persona.archetype;
+        resolvedPersona = {
+          ...resolvedPersona,
+          archetype: {
+            name: a.name,
+            emoji: a.emoji,
+            description: a.description,
+          },
+        };
+        console.log(
+          `[persona] resolved via backend: ${profile.persona.trigger} (data-driven: ${profile.persona.dataDriven})`,
+        );
+      }
     } catch (e) {
-      console.warn(`[profile] backend unavailable for @${username} — demo mode:`, e);
+      console.warn(
+        `[profile] backend unavailable for @${username} — demo mode:`,
+        e,
+      );
       setIsAlturaHolder(false);
       setPnl(null);
     }
-    setPersona(generatePersona(username));
+
+    setPersona(resolvedPersona);
     setStage("result");
   }
 

@@ -58,10 +58,26 @@ export interface AlturaSummary {
   };
 }
 
+/** Archetype resolved by the backend persona engine. */
+export interface BackendArchetype {
+  key: string;
+  name: string;
+  emoji: string;
+  description: string;
+  source: "vault" | "x" | "fallback";
+}
+
+export interface BackendPersonaResolution {
+  archetype: BackendArchetype;
+  dataDriven: boolean;
+  trigger: string;
+}
+
 export interface ProfileResponse {
   username: string;
   x: { user: XUser; tweets: XTweet[] } | null;
   altura: AlturaSummary | null;
+  persona: BackendPersonaResolution;
   cardType: "standard" | "platinum";
   xConfigured: boolean;
 }

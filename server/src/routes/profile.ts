@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { fetchAlturaHolder } from "../services/altura.js";
 import { fetchXProfile } from "../services/x.js";
+import { resolvePersona } from "../services/persona.js";
 import { isXConfigured } from "../config.js";
 
 export const profileRouter = Router();
@@ -37,10 +38,14 @@ profileRouter.get("/profile/:username", async (req, res) => {
       console.error("[Altura API]", alturaResult.reason);
     }
 
+    // Run the data-driven persona engine
+    const persona = resolvePersona(xProfile, altura);
+
     return res.json({
       username: username.replace(/^@/, ""),
       x: xProfile,
       altura,
+      persona,
       cardType: altura?.isHolder ? "platinum" : "standard",
       xConfigured: isXConfigured,
     });
