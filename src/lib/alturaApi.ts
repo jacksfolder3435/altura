@@ -100,3 +100,32 @@ export async function fetchProfile(username: string): Promise<ProfileResponse> {
   }
   return (await res.json()) as ProfileResponse;
 }
+
+/** Body for POST /api/share — logs a raffle entry. */
+export interface ShareEntry {
+  username: string;
+  archetype: { key: string; name: string; source: "vault" | "x" | "fallback" };
+  trigger?: string;
+  isHolder: boolean;
+  pnlUSD?: number | null;
+  costBasisUSD?: number | null;
+  walletAddress?: string | null;
+}
+
+/**
+ * Records a raffle entry. Called when the user clicks "Share on X".
+ * Failures are non-fatal — the user always gets to share even if the
+ * backend is unreachable, we just won't count them in the raffle.
+ */
+export async function recordShare(entry: ShareEntry): Promise<void> {
+  try {
+    await fetch(`${BACKEND_URL}/api/share`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(entry),
+      keepalive: true, // survives the page navigation when X intent opens
+    });
+  } catch (e) {
+    console.warn("[share] failed to record raffle entry:", e);
+  }
+}

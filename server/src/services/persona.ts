@@ -4,27 +4,36 @@
  * Given the real X profile + Altura holder snapshot, assign the correct
  * archetype per the Lunar brief. Priority order (rarest first):
  *
- *   Vault titles (checked first, in order):
- *     1. Pendle LP Degen      — [blocked] requires Pendle API integration
- *     2. Altura OG            — [blocked] requires launch date
- *     3. Epoch 0 Survivor     — [blocked] requires YieldRun epoch data
- *     4. 80%+ APY Legend      — [blocked] requires deposit timestamp + APY
- *     5. Altura Gigachad      — costBasis > $5k                 ← LIVE
- *     6. Diamond Hands        — no outbound transfers (proxy)   ← LIVE
- *     7. Baby Whale           — $1k ≤ costBasis ≤ $5k           ← LIVE
+ *   Vault titles (checked in order, first match wins):
+ *     1. Altura OG            — first deposit ≤ Dec 30, 2025
+ *     2. Epoch 0 Survivor     — first deposit between Dec 29, 2025 – Jan 30, 2026
+ *     3. Altura Gigachad      — costBasis > $5k
+ *     4. Baby Whale           — $1k ≤ costBasis ≤ $5k
+ *     5. Diamond Hands        — any deposit, no withdrawals (transferCount proxy)
+ *
+ *   Dropped per latest Altura team feedback:
+ *     - 80%+ APY Legend       (no APY history endpoint, won't be added)
+ *     - Pendle LP Degen       (no Pendle position data available)
  *
  *   X activity titles (only if no vault title applied):
  *     - Hyperliquid Maxi
- *     - Bro Stop Posting About Memecoins
  *     - InfoFi Enjooooyor
+ *     - Bro Stop Posting About Memecoins
  *     - Airdrop Hunter
  *     - Thread Guy
- *     - Quote Tweet Warrior
  *     - Based Take Merchant
+ *     - Quote Tweet Warrior
  *
  *   Fallback:
  *     - NPC
  */
+
+// === Altura Vault timeline ==============================================
+// Vault opened: 2025-12-23. First 7 days = OG (deposited by 2025-12-30).
+// Epoch 0 ran: 2025-12-29 → 2026-01-30.
+const ALTURA_OG_CUTOFF_MS = Date.UTC(2025, 11, 30, 23, 59, 59); // Dec 30, 2025
+const EPOCH_0_START_MS = Date.UTC(2025, 11, 29, 0, 0, 0);       // Dec 29, 2025
+const EPOCH_0_END_MS = Date.UTC(2026, 0, 30, 23, 59, 59);       // Jan 30, 2026
 import type { AlturaSummary } from "./altura.js";
 import type { XProfile, XTweet } from "./x.js";
 
@@ -49,6 +58,22 @@ export interface PersonaResolution {
 // ---------- Catalog ------------------------------------------------------
 
 const VAULT: Record<string, Archetype> = {
+  og: {
+    key: "altura_og",
+    name: "Altura OG",
+    emoji: "🏛️",
+    description:
+      "DEPOSITED IN THE FIRST WEEK. YOU BELIEVED BEFORE THERE WAS PROOF. RESPECT.",
+    source: "vault",
+  },
+  epoch0: {
+    key: "epoch_0_survivor",
+    name: "Epoch 0 Survivor",
+    emoji: "⚔️",
+    description:
+      "WAS IN YIELDRUN FROM DAY ONE. BATTLE-TESTED AND STILL STANDING.",
+    source: "vault",
+  },
   gigachad: {
     key: "gigachad",
     name: "Altura Gigachad",
@@ -57,20 +82,20 @@ const VAULT: Record<string, Archetype> = {
       "> $5K DEPOSITED IN VAULT OR AVLT ON PENDLE. YOU DON'T JUST TALK THE TALK — YOUR WALLET BACKS IT UP.",
     source: "vault",
   },
-  diamond: {
-    key: "diamond",
-    name: "Diamond Hands",
-    emoji: "🤲",
-    description:
-      "HAS NEVER WITHDRAWN. JUST SITS AND COMPOUNDS. YOUR PATIENCE IS YOUR SUPERPOWER.",
-    source: "vault",
-  },
   babyWhale: {
     key: "baby_whale",
     name: "Baby Whale",
     emoji: "🐋",
     description:
       "$1K-$5K DEPOSITED. NOT QUITE GIGACHAD YET. BUT YOU'RE ON YOUR WAY.",
+    source: "vault",
+  },
+  diamond: {
+    key: "diamond",
+    name: "Diamond Hands",
+    emoji: "🤲",
+    description:
+      "HAS NEVER WITHDRAWN. JUST SITS AND COMPOUNDS. YOUR PATIENCE IS YOUR SUPERPOWER.",
     source: "vault",
   },
 };
@@ -152,22 +177,39 @@ function classifyVault(altura: AlturaSummary | null): {
   if (!altura || !altura.isHolder) return null;
 
   const deposited = altura.totalDepositedUSD;
+  const firstDeposit = altura.firstDepositTimestampMs;
 
-  // Gigachad — > $5k deposited (rarest LIVE vault title)
+  // 1. Altura OG — first deposit in vault's first 7 days (≤ Dec 30, 2025)
+  //    We can only confirm this when transferCount === 1 (so first == last).
+  //    Multi-deposit users are skipped here until Altura adds a
+  //    `firstDepositTimestamp` field.
+  if (firstDeposit && firstDeposit <= ALTURA_OG_CUTOFF_MS) {
+    return { archetype: VAULT.og!, trigger: "vault:altura_og" };
+  }
+
+  // 2. Epoch 0 Survivor — first deposit during Dec 29 → Jan 30
+  if (
+    firstDeposit &&
+    firstDeposit >= EPOCH_0_START_MS &&
+    firstDeposit <= EPOCH_0_END_MS
+  ) {
+    return { archetype: VAULT.epoch0!, trigger: "vault:epoch_0_survivor" };
+  }
+
+  // 3. Altura Gigachad — > $5k deposited
   if (deposited > 5000) {
     return { archetype: VAULT.gigachad!, trigger: "vault:gigachad" };
   }
 
-  // Baby Whale — $1k to $5k deposited
+  // 4. Baby Whale — $1k to $5k deposited
   if (deposited >= 1000 && deposited <= 5000) {
     return { archetype: VAULT.babyWhale!, trigger: "vault:baby_whale" };
   }
 
-  // Diamond Hands — any deposit with no withdrawals.
-  // Proxy: if the user has a positive balance AND their transferCount is
-  // low (≤ 2 — one or two deposit txs, no withdraws), they're diamond hands.
-  // We don't have a real withdraw count in the snapshot yet, so this is a
-  // best-effort heuristic.
+  // 5. Diamond Hands — any deposit, no withdrawals.
+  //    Proxy until Altura exposes a withdraw count: any user with a positive
+  //    balance qualifies (since the campaign is for current holders, anyone
+  //    holding the vault token hasn't withdrawn the full position).
   if (deposited > 0) {
     return { archetype: VAULT.diamond!, trigger: "vault:diamond_hands" };
   }

@@ -1,5 +1,18 @@
 import { config } from "../config.js";
 
+export interface AlturaChainEntry {
+  balance: string;
+  balanceFormatted: string;
+  avgPricePerShare?: string;
+  avgPricePerShareFormatted?: string;
+  sharesReceived?: string;
+  /** Number of vault deposit transactions on this chain. */
+  transferCount?: number;
+  /** Unix timestamp (seconds) of the most recent vault tx on this chain.
+   *  NOTE: this is the LATEST activity, not the first deposit. */
+  lastUpdatedTimestamp?: string;
+}
+
 export interface AlturaHolderResponse {
   twitterUsername: string;
   walletAddress: string;
@@ -7,15 +20,7 @@ export interface AlturaHolderResponse {
     address: string;
     totalBalance: string;
     totalBalanceFormatted: string;
-    chains: Record<
-      string,
-      {
-        balance: string;
-        balanceFormatted: string;
-        avgPricePerShare?: string;
-        avgPricePerShareFormatted?: string;
-      }
-    >;
+    chains: Record<string, AlturaChainEntry>;
     portfolioValue: string;
     costAnalysis: {
       overall: {
@@ -48,6 +53,19 @@ export interface AlturaSummary {
   apy: number | null;
   /** Total balance of vault tokens (Altura `totalBalanceFormatted`). */
   vaultTokenBalance: number;
+  /** Total number of vault deposit transactions across all chains. */
+  transferCount: number;
+  /** Most recent vault tx timestamp across chains, in ms (or null). */
+  lastUpdatedTimestampMs: number | null;
+  /** Best-effort first deposit timestamp in ms.
+   *  - When `transferCount === 1`, this equals `lastUpdatedTimestampMs`
+   *    (it's the only deposit so it must also be the first).
+   *  - When `transferCount > 1`, this is `null` because the snapshot
+   *    endpoint doesn't expose the first-deposit timestamp.
+   *  TODO(altura): request a `firstDepositTimestamp` field on the snapshot
+   *  endpoint so we can resolve OG / Epoch 0 for multi-deposit users.
+   */
+  firstDepositTimestampMs: number | null;
   /** On-chain wallet address. */
   walletAddress: string;
   /** Raw passthrough of the Altura snapshot for debugging / future use. */
@@ -104,6 +122,29 @@ export async function fetchAlturaHolder(
 
   const pnlPct = costBasis > 0 ? (exactPnl / costBasis) * 100 : 0;
 
+  // Aggregate transfer activity across chains.
+  let totalTransferCount = 0;
+  let mostRecentTsSec = 0;
+  for (const chain of Object.values(data.holder.chains)) {
+    if (typeof chain.transferCount === "number") {
+      totalTransferCount += chain.transferCount;
+    }
+    if (chain.lastUpdatedTimestamp) {
+      const t = Number(chain.lastUpdatedTimestamp);
+      if (t > mostRecentTsSec) mostRecentTsSec = t;
+    }
+  }
+  const lastUpdatedTimestampMs =
+    mostRecentTsSec > 0 ? mostRecentTsSec * 1000 : null;
+
+  // Best-effort first deposit:
+  // - exactly 1 transfer → first == last
+  // - more than 1         → unknown (snapshot doesn't expose it)
+  const firstDepositTimestampMs =
+    totalTransferCount === 1 && lastUpdatedTimestampMs
+      ? lastUpdatedTimestampMs
+      : null;
+
   return {
     isHolder: true,
     totalDepositedUSD: costBasis,
@@ -112,6 +153,9 @@ export async function fetchAlturaHolder(
     pnlPercent: pnlPct,
     apy: null, // Altura snapshot does not expose APY
     vaultTokenBalance: Number(data.holder.totalBalanceFormatted),
+    transferCount: totalTransferCount,
+    lastUpdatedTimestampMs,
+    firstDepositTimestampMs,
     walletAddress: data.walletAddress,
     raw: {
       costBasis: overall.costBasis,

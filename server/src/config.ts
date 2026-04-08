@@ -17,6 +17,11 @@ export const config = {
     apiUrl: required("ALTURA_API_URL", process.env.ALTURA_API_URL),
     apiKey: required("ALTURA_API_KEY", process.env.ALTURA_API_KEY),
   },
+  /** Postgres connection string for raffle/share tracking. Optional in dev. */
+  databaseUrl: process.env.DATABASE_URL ?? "",
+  /** Bearer token required to call admin endpoints (e.g. CSV export). */
+  adminToken: process.env.ADMIN_TOKEN ?? "",
 } as const;
 
 export const isXConfigured = config.xBearerToken.length > 0;
+export const isDatabaseConfigured = config.databaseUrl.length > 0;

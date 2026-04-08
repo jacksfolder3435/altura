@@ -1,7 +1,12 @@
 import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { parseUsername, generatePersona, type PersonaResult } from "@/lib/personaGenerator";
-import { fetchProfile, type AlturaSummary } from "@/lib/alturaApi";
+import {
+  fetchProfile,
+  recordShare,
+  type AlturaSummary,
+  type ProfileResponse,
+} from "@/lib/alturaApi";
 import { renderCardToCanvas, type CardTheme, type PnlData } from "@/components/SocialCard";
 import FigmaDefiCard from "@/components/figma/FigmaDefiCard";
 import FigmaPlatinumCard from "@/components/figma/FigmaPlatinumCard";
@@ -54,6 +59,8 @@ export default function Index() {
   const [cardTheme, setCardTheme] = useState<CardTheme>("dark");
   const [pnl, setPnl] = useState<PnlData | null>(null);
   const [isAlturaHolder, setIsAlturaHolder] = useState(false);
+  /** Backend response we use for sharing/raffle logging. */
+  const [profile, setProfile] = useState<ProfileResponse | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -75,13 +82,14 @@ export default function Index() {
     let resolvedPersona: PersonaResult = generatePersona(username);
 
     try {
-      const profile = await fetchProfile(username);
-      console.log(`[profile] @${username}:`, profile);
+      const fetched = await fetchProfile(username);
+      console.log(`[profile] @${username}:`, fetched);
+      setProfile(fetched);
 
       // Holder state & PnL
-      if (profile.altura?.isHolder) {
+      if (fetched.altura?.isHolder) {
         setIsAlturaHolder(true);
-        setPnl(alturaToPnl(profile.altura));
+        setPnl(alturaToPnl(fetched.altura));
         setCardTheme("platinum");
       } else {
         setIsAlturaHolder(false);
@@ -93,8 +101,8 @@ export default function Index() {
       // description) but not the other flavour fields (traits, topics, stats,
       // gradient), so we merge: keep those from the local generator, swap in
       // the real archetype.
-      if (profile.persona?.archetype) {
-        const a = profile.persona.archetype;
+      if (fetched.persona?.archetype) {
+        const a = fetched.persona.archetype;
         resolvedPersona = {
           ...resolvedPersona,
           archetype: {
@@ -104,7 +112,7 @@ export default function Index() {
           },
         };
         console.log(
-          `[persona] resolved via backend: ${profile.persona.trigger} (data-driven: ${profile.persona.dataDriven})`,
+          `[persona] resolved via backend: ${fetched.persona.trigger} (data-driven: ${fetched.persona.dataDriven})`,
         );
       }
     } catch (e) {
@@ -112,6 +120,7 @@ export default function Index() {
         `[profile] backend unavailable for @${username} — demo mode:`,
         e,
       );
+      setProfile(null);
       setIsAlturaHolder(false);
       setPnl(null);
     }
@@ -124,6 +133,7 @@ export default function Index() {
     setStage("landing");
     setInput("");
     setPersona(null);
+    setProfile(null);
     setPnl(null);
     setIsAlturaHolder(false);
     setCardTheme("dark");
@@ -153,8 +163,25 @@ export default function Index() {
 
   function handleShare() {
     if (!persona) return;
+
+    // Log the raffle entry first (fire-and-forget). We use `keepalive` so
+    // it survives the X intent navigation. Failures are non-fatal — the
+    // share button always works even if the backend is down.
+    if (profile?.persona?.archetype) {
+      const a = profile.persona.archetype;
+      void recordShare({
+        username: profile.username,
+        archetype: { key: a.key, name: a.name, source: a.source },
+        trigger: profile.persona.trigger,
+        isHolder: Boolean(profile.altura?.isHolder),
+        pnlUSD: profile.altura?.pnlUSD ?? null,
+        costBasisUSD: profile.altura?.totalDepositedUSD ?? null,
+        walletAddress: profile.altura?.walletAddress ?? null,
+      });
+    }
+
     const text = encodeURIComponent(
-      `Just discovered my Digital DeFi Profile: ${persona.archetype.emoji} ${persona.archetype.name}\n\n"${persona.archetype.description}"\n\nFind yours 👇`
+      `Just discovered my Digital DeFi Profile: ${persona.archetype.emoji} ${persona.archetype.name}\n\n"${persona.archetype.description}"\n\nFind yours 👇`,
     );
     window.open(`https://twitter.com/intent/tweet?text=${text}`, "_blank");
   }

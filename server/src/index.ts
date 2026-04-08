@@ -1,8 +1,9 @@
 import express from "express";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
-import { config } from "./config.js";
+import { config, isDatabaseConfigured } from "./config.js";
 import { profileRouter } from "./routes/profile.js";
+import { shareRouter } from "./routes/share.js";
 
 const app = express();
 
@@ -31,10 +32,11 @@ app.use(
 );
 
 app.get("/health", (_req, res) => {
-  res.json({ ok: true, env: config.nodeEnv });
+  res.json({ ok: true, env: config.nodeEnv, db: isDatabaseConfigured });
 });
 
 app.use("/api", profileRouter);
+app.use("/api", shareRouter);
 
 app.listen(config.port, () => {
   // eslint-disable-next-line no-console
