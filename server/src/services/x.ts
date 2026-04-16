@@ -60,7 +60,7 @@ export async function fetchXProfile(username: string): Promise<XProfile> {
 
   const tweetsResp = await xFetch<{ data?: XTweet[] }>(
     `/users/${user.id}/tweets` +
-      `?max_results=10&exclude=retweets,replies&tweet.fields=public_metrics,created_at`,
+      `?max_results=20&exclude=retweets,replies&tweet.fields=public_metrics,created_at`,
   );
 
   return { user, tweets: tweetsResp.data ?? [] };

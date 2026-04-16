@@ -1,39 +1,41 @@
 /**
- * Data-driven persona engine.
+ * Data-driven persona engine — v1.1.
  *
- * Given the real X profile + Altura holder snapshot, assign the correct
- * archetype per the Lunar brief. Priority order (rarest first):
+ * Decision tree (rarest first wins):
  *
- *   Vault titles (checked in order, first match wins):
- *     1. Altura OG            — first deposit ≤ Dec 30, 2025
- *     2. Epoch 0 Survivor     — first deposit between Dec 29, 2025 – Jan 30, 2026
+ *   Vault titles (only if user is a holder):
+ *     1. Altura OG            — first deposit ≤ 2025-12-30
+ *     2. Epoch 0 Survivor     — first deposit between 2025-12-29 and 2026-01-30
  *     3. Altura Gigachad      — costBasis > $5k
  *     4. Baby Whale           — $1k ≤ costBasis ≤ $5k
  *     5. Diamond Hands        — any deposit, no withdrawals (transferCount proxy)
  *
- *   Dropped per latest Altura team feedback:
- *     - 80%+ APY Legend       (no APY history endpoint, won't be added)
- *     - Pendle LP Degen       (no Pendle position data available)
- *
  *   X activity titles (only if no vault title applied):
- *     - Hyperliquid Maxi
- *     - InfoFi Enjooooyor
- *     - Bro Stop Posting About Memecoins
- *     - Airdrop Hunter
- *     - Thread Guy
- *     - Based Take Merchant
- *     - Quote Tweet Warrior
+ *     6. Hyperliquid Maxi          (1 mention)
+ *     7. InfoFi Enjooooyor         (1 mention)
+ *     8. Bro Stop Posting About Memecoins (2 mentions)
+ *     9. Airdrop Hunter            (1 mention)
+ *     10. Thread Guy               (1 tweet)
+ *     11. Based Take Merchant      (2 mentions)
+ *     12. Quote Tweet Warrior      (2 short reaction tweets)
+ *     13. Crypto Native            (1 mention) — broad safety net for crypto users
  *
  *   Fallback:
- *     - NPC
+ *     14. Normie                   — no DeFi, no crypto signal at all
+ *
+ * v1.1 changes vs v1.0:
+ *   - X API tweet sample 10 → 20
+ *   - All keyword lists massively expanded; thresholds lowered
+ *   - New: Crypto Native (catches anyone tweeting about crypto without a vault)
+ *   - Renamed: NPC → Normie
+ *   - Better word-boundary matching: handles $-prefixed tickers, hyphenated
+ *     terms, multi-word phrases.
+ *
+ * Dropped (per Altura team):
+ *   - 80%+ APY Legend (no APY history endpoint)
+ *   - Pendle LP Degen (no Pendle position data)
+ *   - CT Lurker (extra X API cost for low value)
  */
-
-// === Altura Vault timeline ==============================================
-// Vault opened: 2025-12-23. First 7 days = OG (deposited by 2025-12-30).
-// Epoch 0 ran: 2025-12-29 → 2026-01-30.
-const ALTURA_OG_CUTOFF_MS = Date.UTC(2025, 11, 30, 23, 59, 59); // Dec 30, 2025
-const EPOCH_0_START_MS = Date.UTC(2025, 11, 29, 0, 0, 0);       // Dec 29, 2025
-const EPOCH_0_END_MS = Date.UTC(2026, 0, 30, 23, 59, 59);       // Jan 30, 2026
 import type { AlturaSummary } from "./altura.js";
 import type { XProfile, XTweet } from "./x.js";
 
@@ -42,18 +44,24 @@ export interface Archetype {
   name: string;
   emoji: string;
   description: string;
-  /** "vault" titles show on the Platinum card, "x" titles show on the standard card */
+  /** "vault" titles render Platinum card; "x"/"crypto"/"fallback" render Standard */
   source: "vault" | "x" | "fallback";
 }
 
 export interface PersonaResolution {
   archetype: Archetype;
-  /** true when the title was derived from real data; false when it's the
-   *  fallback (NPC). Useful for analytics. */
+  /** true when the title was derived from real data; false for fallback. */
   dataDriven: boolean;
   /** Short debug signal of what matched, e.g. "vault:gigachad", "x:memecoins". */
   trigger: string;
 }
+
+// === Altura Vault timeline ==============================================
+// Vault opened: 2025-12-23. First 7 days = OG (deposited by 2025-12-30).
+// Epoch 0 ran: 2025-12-29 → 2026-01-30.
+const ALTURA_OG_CUTOFF_MS = Date.UTC(2025, 11, 30, 23, 59, 59);
+const EPOCH_0_START_MS = Date.UTC(2025, 11, 29, 0, 0, 0);
+const EPOCH_0_END_MS = Date.UTC(2026, 0, 30, 23, 59, 59);
 
 // ---------- Catalog ------------------------------------------------------
 
@@ -109,20 +117,20 @@ const X_TITLES: Record<string, Archetype> = {
       "TWEETS ABOUT HYPE NON-STOP. STOPPED WORKING AFTER THE AIRDROP, FULL-TIME X CREATOR NOW.",
     source: "x",
   },
-  memecoins: {
-    key: "memecoins",
-    name: "Bro Stop Posting About Memecoins",
-    emoji: "🛑",
-    description:
-      "SELF-EXPLANATORY. HALF OF CT QUALIFIES. YOUR TIMELINE IS 90% DOG COINS AND REGRET.",
-    source: "x",
-  },
   infofi: {
     key: "infofi",
     name: "InfoFi Enjooooyor",
     emoji: "📡",
     description:
       "STILL TWEETING ABOUT INFOFI. IT'S BEEN DEAD FOR 3 MONTHS. SOMEONE TELL THEM.",
+    source: "x",
+  },
+  memecoins: {
+    key: "memecoins",
+    name: "Bro Stop Posting About Memecoins",
+    emoji: "🛑",
+    description:
+      "SELF-EXPLANATORY. HALF OF CT QUALIFIES. YOUR TIMELINE IS 90% DOG COINS AND REGRET.",
     source: "x",
   },
   airdropHunter: {
@@ -141,14 +149,6 @@ const X_TITLES: Record<string, Archetype> = {
       "POSTS 1/47 THREADS. NEVER FINISHES. THE GRAVEYARD OF UNFINISHED ALPHA IS VAST.",
     source: "x",
   },
-  quoteTweetWarrior: {
-    key: "qt_warrior",
-    name: "Quote Tweet Warrior",
-    emoji: "⚔️",
-    description:
-      "RATIO GAME STRONG. ORIGINAL CONTENT NONEXISTENT. YOU LIVE TO DUNK.",
-    source: "x",
-  },
   basedTake: {
     key: "based_take",
     name: "Based Take Merchant",
@@ -157,14 +157,30 @@ const X_TITLES: Record<string, Archetype> = {
       "DROPS TAKES THAT GET RATIOED AT FIRST BUT AGE LIKE FINE WINE.",
     source: "x",
   },
+  quoteTweetWarrior: {
+    key: "qt_warrior",
+    name: "Quote Tweet Warrior",
+    emoji: "⚔️",
+    description:
+      "RATIO GAME STRONG. ORIGINAL CONTENT NONEXISTENT. YOU LIVE TO DUNK.",
+    source: "x",
+  },
+  cryptoNative: {
+    key: "crypto_native",
+    name: "Crypto Native",
+    emoji: "🌐",
+    description:
+      "YOU'VE BEEN IN THE TRENCHES LONG ENOUGH. NO ALTURA VAULT POSITION THOUGH?",
+    source: "x",
+  },
 };
 
-const NPC: Archetype = {
-  key: "npc",
-  name: "NPC",
+const NORMIE: Archetype = {
+  key: "normie",
+  name: "Normie",
   emoji: "🤖",
   description:
-    "ZERO DEFI POSITIONS, TWEETS 'GM' ONCE A WEEK. ALTURA CAN FIX AT LEAST ONE OF THOSE PROBLEMS.",
+    "ZERO ONCHAIN FOOTPRINT. ALTURA'S VAULT IS A GOOD PLACE TO START.",
   source: "fallback",
 };
 
@@ -180,9 +196,8 @@ function classifyVault(altura: AlturaSummary | null): {
   const firstDeposit = altura.firstDepositTimestampMs;
 
   // 1. Altura OG — first deposit in vault's first 7 days (≤ Dec 30, 2025)
-  //    We can only confirm this when transferCount === 1 (so first == last).
-  //    Multi-deposit users are skipped here until Altura adds a
-  //    `firstDepositTimestamp` field.
+  //    Only triggers when transferCount === 1 (first == last); multi-deposit
+  //    users are skipped until Altura adds a `firstDepositTimestamp` field.
   if (firstDeposit && firstDeposit <= ALTURA_OG_CUTOFF_MS) {
     return { archetype: VAULT.og!, trigger: "vault:altura_og" };
   }
@@ -206,10 +221,7 @@ function classifyVault(altura: AlturaSummary | null): {
     return { archetype: VAULT.babyWhale!, trigger: "vault:baby_whale" };
   }
 
-  // 5. Diamond Hands — any deposit, no withdrawals.
-  //    Proxy until Altura exposes a withdraw count: any user with a positive
-  //    balance qualifies (since the campaign is for current holders, anyone
-  //    holding the vault token hasn't withdrawn the full position).
+  // 5. Diamond Hands — any deposit, no withdrawals (proxy: positive balance)
   if (deposited > 0) {
     return { archetype: VAULT.diamond!, trigger: "vault:diamond_hands" };
   }
@@ -219,111 +231,290 @@ function classifyVault(altura: AlturaSummary | null): {
 
 // ---------- X content classifier ----------------------------------------
 
-/** Case-insensitive keyword presence, treating word boundaries loosely. */
+/**
+ * Count occurrences of any term inside `text`, with smart boundaries:
+ *   - $-prefixed tickers ($hype, $arb, ...)         → match exact token
+ *   - hyphenated/dotted/multiword phrases           → match as literal phrase
+ *   - plain words                                    → match with word boundaries
+ *
+ * All matching is case-insensitive. Boundaries use lookaround for "not a
+ * letter or digit" so we don't get false partials inside other words.
+ */
 function hasAny(text: string, terms: string[]): number {
   const lower = text.toLowerCase();
-  let count = 0;
-  for (const t of terms) {
-    const re = new RegExp(`\\b${t.toLowerCase()}\\b`, "g");
-    const matches = lower.match(re);
-    if (matches) count += matches.length;
+  let total = 0;
+  for (const raw of terms) {
+    const term = raw.toLowerCase();
+    // Escape regex metas.
+    const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    // (?<![a-z0-9]) ... (?![a-z0-9]) → "surrounded by non-alphanum or string ends"
+    // Works for $hype, info-fi, kaito connect, airdrop, doge, etc.
+    const pattern = new RegExp(`(?<![a-z0-9])${escaped}(?![a-z0-9])`, "g");
+    const matches = lower.match(pattern);
+    if (matches) total += matches.length;
   }
-  return count;
+  return total;
 }
 
-interface TweetSignals {
-  tweets: XTweet[];
-  joined: string;
-  hyperliquid: number;
-  memecoins: number;
-  infofi: number;
-  airdrops: number;
-  threads: number;
-  quoteTweets: number;
-  basedTakes: number;
-}
+// === Keyword catalogs (v1.1, all case-insensitive) =====================
 
-function analyzeTweets(tweets: XTweet[]): TweetSignals {
-  const joined = tweets.map((t) => t.text).join("\n");
+const KW_HYPERLIQUID = [
+  "hyperliquid",
+  "hype",
+  "$hype",
+  "hyperevm",
+  "hypercore",
+  "hypurr",
+  "hypurrscan",
+  "jeff yan",
+  "hlp",
+  "perps",
+  "$purr",
+  "purr",
+  "hyperlaunch",
+  "hyperliquid l1",
+  "hfun",
+  "hyperliquidity",
+  "builder codes",
+  "hyper",
+  "hyperps",
+  "pip",
+];
 
-  return {
-    tweets,
-    joined,
-    hyperliquid: hasAny(joined, [
-      "hyperliquid",
-      "hype",
-      "hyperevm",
-      "\\$hype",
-    ]),
-    memecoins: hasAny(joined, [
-      "memecoin",
-      "memecoins",
-      "meme coin",
-      "doge",
-      "shib",
-      "pepe",
-      "wif",
-      "bonk",
-      "popcat",
-      "floki",
-      "trenches",
-      "pumpfun",
-      "pump\\.fun",
-    ]),
-    infofi: hasAny(joined, ["infofi", "info-fi", "info fi", "kaito"]),
-    airdrops: hasAny(joined, [
-      "airdrop",
-      "airdrops",
-      "testnet",
-      "points",
-      "points program",
-      "season 1",
-      "season 2",
-      "$zro",
-      "$arb",
-      "$op",
-      "farming",
-      "farmers",
-    ]),
-    threads: countThreads(tweets),
-    // Quote-tweet warrior: we don't have direct QT metadata on the public
-    // timeline endpoint, so use text heuristics — short reaction tweets that
-    // look like they were attached to a quoted post.
-    quoteTweets: countQuoteTweetLikePosts(tweets),
-    basedTakes: hasAny(joined, [
-      "based",
-      "cope",
-      "ngmi",
-      "wagmi",
-      "gigachad",
-      "chad",
-      "beta",
-    ]),
-  };
-}
+const KW_INFOFI = [
+  "infofi",
+  "info-fi",
+  "kaito",
+  "$kaito",
+  "yaps",
+  "yappers",
+  "yapping",
+  "yap-to-earn",
+  "mindshare",
+  "gkaito",
+  "skaito",
+  "kaito connect",
+  "kaito pro",
+  "cookie.fun",
+  "$cookie",
+  "$loud",
+  "proof-of-attention",
+  "yapper leaderboard",
+  "attention economy",
+  "smart followers",
+];
 
-function countThreads(tweets: XTweet[]): number {
-  // "Thread guy" indicators: tweets that start with "1/", "2/", "🧵", or
-  // literally contain "thread".
+const KW_MEMECOINS = [
+  "memecoin",
+  "memecoins",
+  "doge",
+  "$doge",
+  "shib",
+  "$shib",
+  "pepe",
+  "$pepe",
+  "wif",
+  "$wif",
+  "bonk",
+  "$bonk",
+  "popcat",
+  "$popcat",
+  "trenches",
+  "pumpfun",
+  "pump.fun",
+  "$trump",
+  "$brett",
+  "$mog",
+  "$mother",
+  "$daddy",
+  "$floki",
+  "$wojak",
+  "$turbo",
+  "$milady",
+  "$myro",
+  "$wen",
+  "$bome",
+  "$giga",
+  "$toshi",
+  "rugpull",
+  "rug pull",
+  "honeypot",
+  "stealth launch",
+  "fair launch",
+  "bonding curve",
+  "moonshot",
+  "memecoin szn",
+  "degen mint",
+  "jeet",
+];
+
+const KW_AIRDROPS = [
+  "airdrop",
+  "testnet",
+  "points",
+  "season",
+  "$arb",
+  "$op",
+  "$zro",
+  "farming",
+  "$strk",
+  "$jup",
+  "eligibility",
+  "claim",
+  "snapshot",
+  "tge",
+  "allocation",
+  "retroactive",
+  "retrodrop",
+  "sybil",
+  "point farming",
+  "$eigen",
+  "$blast",
+  "$scroll",
+  "$zk",
+  "$linea",
+  "$layer3",
+  "galxe",
+  "zealy",
+  "quest farming",
+  "testnet faucet",
+  "bridging",
+  "daily check-in",
+  "early adopter",
+  "genesis drop",
+  "claim window",
+  "token claim",
+  "points meta",
+  "fdv",
+];
+
+const KW_BASED_TAKES = [
+  "based",
+  "ngmi",
+  "wagmi",
+  "cope",
+  "copium",
+  "hopium",
+  "gigachad",
+  "chad",
+  "beta",
+  "alpha",
+  "ser",
+  "anon",
+  "fren",
+  "bullish",
+  "bearish",
+  "rekt",
+  "lfg",
+  "gm",
+  "probably nothing",
+  "few",
+  "have fun staying poor",
+  "midcurve",
+  "touch grass",
+  "iykyk",
+  "up only",
+  "degen",
+];
+
+const KW_CRYPTO_NATIVE = [
+  "bitcoin",
+  "btc",
+  "ethereum",
+  "eth",
+  "solana",
+  "sol",
+  "defi",
+  "nft",
+  "web3",
+  "blockchain",
+  "dao",
+  "staking",
+  "yield",
+  "dex",
+  "cex",
+  "tokenomics",
+  "altcoin",
+  "whale",
+  "gas",
+  "layer 2",
+  "l2",
+  "bridge",
+  "liquidity",
+  "tvl",
+  "onchain",
+  "on-chain",
+  "hodl",
+  "fud",
+  "pump",
+  "dump",
+  "mint",
+  "wallet",
+  "maxi",
+  "hodler",
+  "binance",
+  "coinbase",
+  "metamask",
+  "phantom",
+  "ledger",
+  "rollup",
+  "zk",
+];
+
+// Thread Guy patterns: matches the BEGINNING or content of each tweet.
+function countThreadSignals(tweets: XTweet[]): number {
   let n = 0;
   for (const t of tweets) {
-    if (/^\s*(1\s*\/|🧵)/.test(t.text)) n++;
-    else if (/\bthread\b/i.test(t.text)) n++;
+    const text = t.text;
+    const trimmed = text.trim();
+    if (/^\s*1\s*\//.test(trimmed)) n++;
+    else if (/^\s*🧵/.test(trimmed)) n++;
+    else if (/\bthread\b/i.test(text)) n++;
+    else if (/\(\s*1\s*\//.test(text)) n++;
+    else if (/^\s*■/.test(trimmed)) n++;
   }
   return n;
 }
 
-function countQuoteTweetLikePosts(tweets: XTweet[]): number {
-  // Heuristic: very short reaction tweets (< 50 chars, no URLs) that look
-  // like hot takes attached to a QT. Not perfect but good enough for v1.
+// Quote Tweet Warrior heuristic: short reaction tweets with no link.
+function countQTLikePosts(tweets: XTweet[]): number {
   let n = 0;
   for (const t of tweets) {
     const trimmed = t.text.trim();
-    if (trimmed.length > 0 && trimmed.length < 50 && !/https?:\/\//.test(trimmed)) {
+    if (
+      trimmed.length > 0 &&
+      trimmed.length < 50 &&
+      !/https?:\/\//.test(trimmed)
+    ) {
       n++;
     }
   }
   return n;
+}
+
+interface TweetSignals {
+  hyperliquid: number;
+  infofi: number;
+  memecoins: number;
+  airdrops: number;
+  threads: number;
+  basedTakes: number;
+  quoteTweets: number;
+  cryptoNative: number;
+}
+
+function analyzeTweets(tweets: XTweet[]): TweetSignals {
+  const joined = tweets.map((t) => t.text).join("\n");
+  return {
+    hyperliquid: hasAny(joined, KW_HYPERLIQUID),
+    infofi: hasAny(joined, KW_INFOFI),
+    memecoins: hasAny(joined, KW_MEMECOINS),
+    airdrops: hasAny(joined, KW_AIRDROPS),
+    threads: countThreadSignals(tweets),
+    basedTakes: hasAny(joined, KW_BASED_TAKES),
+    quoteTweets: countQTLikePosts(tweets),
+    cryptoNative: hasAny(joined, KW_CRYPTO_NATIVE),
+  };
 }
 
 function classifyX(xProfile: XProfile | null): {
@@ -332,32 +523,39 @@ function classifyX(xProfile: XProfile | null): {
 } | null {
   if (!xProfile || xProfile.tweets.length === 0) return null;
 
-  const signals = analyzeTweets(xProfile.tweets);
+  const s = analyzeTweets(xProfile.tweets);
 
-  // Priority order within X titles — most specific / rarest first.
-  // A single strong signal beats weaker aggregates.
-  if (signals.hyperliquid >= 2) {
+  // Priority order — most specific first, then the broad Crypto Native net.
+  if (s.hyperliquid >= 1) {
     return { archetype: X_TITLES.hyperliquidMaxi!, trigger: "x:hyperliquid" };
   }
-  if (signals.infofi >= 1) {
+  if (s.infofi >= 1) {
     return { archetype: X_TITLES.infofi!, trigger: "x:infofi" };
   }
-  if (signals.memecoins >= 2) {
+  if (s.memecoins >= 2) {
     return { archetype: X_TITLES.memecoins!, trigger: "x:memecoins" };
   }
-  if (signals.airdrops >= 3) {
+  if (s.airdrops >= 1) {
     return { archetype: X_TITLES.airdropHunter!, trigger: "x:airdrop_hunter" };
   }
-  if (signals.threads >= 2) {
+  if (s.threads >= 1) {
     return { archetype: X_TITLES.threadGuy!, trigger: "x:thread_guy" };
   }
-  if (signals.basedTakes >= 3) {
+  if (s.basedTakes >= 2) {
     return { archetype: X_TITLES.basedTake!, trigger: "x:based_take" };
   }
-  if (signals.quoteTweets >= 4) {
+  if (s.quoteTweets >= 2) {
     return {
       archetype: X_TITLES.quoteTweetWarrior!,
       trigger: "x:qt_warrior",
+    };
+  }
+  // Broad safety net — anyone tweeting about crypto without a vault title
+  // should land here instead of falling all the way to Normie.
+  if (s.cryptoNative >= 1) {
+    return {
+      archetype: X_TITLES.cryptoNative!,
+      trigger: "x:crypto_native",
     };
   }
 
@@ -376,12 +574,12 @@ export function resolvePersona(
     return { ...vault, dataDriven: true };
   }
 
-  // 2) Otherwise an X activity title
+  // 2) Otherwise an X activity title (specific → Crypto Native net)
   const x = classifyX(xProfile);
   if (x) {
     return { ...x, dataDriven: true };
   }
 
-  // 3) Fallback — NPC
-  return { archetype: NPC, trigger: "fallback:npc", dataDriven: false };
+  // 3) Fallback — Normie
+  return { archetype: NORMIE, trigger: "fallback:normie", dataDriven: false };
 }

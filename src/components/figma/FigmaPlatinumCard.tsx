@@ -156,19 +156,7 @@ const FigmaPlatinumCard = forwardRef<HTMLDivElement, Props>(function FigmaPlatin
         <div className="absolute inset-0 pointer-events-none rounded-[inherit] shadow-[inset_0px_-1px_0px_0px_white,inset_0px_1px_0px_0px_rgba(0,0,0,0.45)]" />
       </div>
 
-      {/* Footer URL */}
-      <p
-        className="-translate-x-1/2 absolute bg-clip-text font-medium leading-[8px] left-[calc(50%-42px)] opacity-20 text-[8px] text-[transparent] text-center top-[395px] uppercase w-[314px]"
-        style={{
-          fontFamily: "'Geist Mono', monospace",
-          backgroundImage:
-            "linear-gradient(177.58deg, rgb(95, 107, 99) 10.448%, rgb(186, 209, 193) 53.323%, rgb(255, 255, 255) 73.433%)",
-        }}
-      >
-        {data.username
-          ? `alturanft.com/persona/${data.username}`
-          : "alturanft.com/persona"}
-      </p>
+      {/* Footer URL removed — pending final domain decision. */}
 
       {/* Green tint overlay */}
       <div
@@ -200,12 +188,12 @@ const FigmaPlatinumCard = forwardRef<HTMLDivElement, Props>(function FigmaPlatin
           }}
         />
         <div
-          className="bg-clip-text flex flex-col justify-center leading-[0] not-italic relative shrink-0 text-[10px] text-[transparent] text-right tracking-[-0.6px] uppercase whitespace-nowrap"
+          className="flex flex-col justify-center leading-[0] not-italic relative shrink-0 text-[10px] text-right tracking-[-0.6px] uppercase whitespace-nowrap"
           style={{
             fontFamily: "'Funnel Display', sans-serif",
             fontWeight: 800,
-            backgroundImage:
-              "linear-gradient(252.17deg, rgba(0, 0, 0, 0) 2.7%, rgba(0, 0, 0, 0.66) 17.52%, rgba(0, 0, 0, 0) 28.52%, rgba(0, 0, 0, 0.66) 37.14%, rgba(0, 0, 0, 0) 55.72%, rgba(0, 0, 0, 0.66) 68.99%, rgba(0, 0, 0, 0) 92.64%, rgba(0, 0, 0, 0.578) 109.74%), linear-gradient(90deg, rgba(0, 0, 0, 0.63) 0%, rgba(0, 0, 0, 0.63) 100%)",
+            color: "#FFFFFF",
+            textShadow: "0 1px 1px rgba(0,0,0,0.6)",
           }}
         >
           <p className="leading-[7.5px]">Platinum</p>

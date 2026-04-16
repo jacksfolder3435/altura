@@ -59,21 +59,7 @@ const FigmaDefiCard = forwardRef<HTMLDivElement, Props>(function FigmaDefiCard(
         </div>
       </div>
 
-      {/* Footer URL — bottom-left, in the green brand color, below the line. */}
-      <p
-        className="absolute font-medium leading-[10px] left-[34px] text-[9px] uppercase whitespace-nowrap"
-        style={{
-          fontFamily: "'Geist Mono', monospace",
-          top: 405,
-          color: "#5EFFCA",
-          opacity: 0.85,
-          margin: 0,
-        }}
-      >
-        {data.username
-          ? `alturanft.com/persona/${data.username}`
-          : "alturanft.com/persona"}
-      </p>
+      {/* Footer URL removed — pending final domain decision. */}
 
       {/* Green tint overlay */}
       <div
@@ -105,12 +91,12 @@ const FigmaDefiCard = forwardRef<HTMLDivElement, Props>(function FigmaDefiCard(
             }}
           />
           <div
-            className="bg-clip-text flex flex-col justify-center leading-[0] not-italic relative shrink-0 text-[10px] text-[transparent] text-right tracking-[-0.6px] uppercase whitespace-nowrap"
+            className="flex flex-col justify-center leading-[0] not-italic relative shrink-0 text-[10px] text-right tracking-[-0.6px] uppercase whitespace-nowrap"
             style={{
               fontFamily: "'Funnel Display', sans-serif",
               fontWeight: 800,
-              backgroundImage:
-                "linear-gradient(237.51deg, rgba(0, 0, 0, 0) 2.7%, rgba(0, 0, 0, 0.66) 17.52%, rgba(0, 0, 0, 0) 28.52%, rgba(0, 0, 0, 0.66) 37.14%, rgba(0, 0, 0, 0) 55.72%, rgba(0, 0, 0, 0.66) 68.99%, rgba(0, 0, 0, 0) 92.64%, rgba(0, 0, 0, 0.578) 109.74%), linear-gradient(90deg, rgba(0, 0, 0, 0.63) 0%, rgba(0, 0, 0, 0.63) 100%)",
+              color: "#FFFFFF",
+              textShadow: "0 1px 1px rgba(0,0,0,0.6)",
             }}
           >
             <p className="leading-[7.5px]">Digital defi profile</p>
