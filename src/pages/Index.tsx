@@ -57,6 +57,15 @@ export default function Index() {
   const [persona, setPersona] = useState<PersonaResult | null>(null);
   const [error, setError] = useState("");
   const [copyState, setCopyState] = useState<"idle" | "copying" | "done">("idle");
+  /**
+   * idle       → ready
+   * sharing    → capturing card + opening share sheet / intent
+   * done       → native Web Share completed successfully
+   * paste-hint → image copied to clipboard, X compose open, user should ⌘V
+   */
+  const [shareState, setShareState] = useState<
+    "idle" | "sharing" | "done" | "paste-hint"
+  >("idle");
   const [cardTheme, setCardTheme] = useState<CardTheme>("dark");
   const [pnl, setPnl] = useState<PnlData | null>(null);
   const [isAlturaHolder, setIsAlturaHolder] = useState(false);
@@ -142,61 +151,86 @@ export default function Index() {
   }
 
   /**
-   * Capture the live card DOM (the actual Figma-styled element with avatar,
-   * @handle, PnL, APY, etc.) and copy it to the clipboard as a PNG.
+   * Capture the live card DOM (with avatar, @handle, PnL, APY, etc.) as a
+   * PNG blob. Always exports at the native 750x432 design size with 2x
+   * pixel ratio so the result is retina-crisp regardless of how CardScaler
+   * is currently scaling the on-screen render.
    *
-   * We render the cardRef at its NATIVE 750x432 size (via html-to-image)
-   * regardless of any responsive scaling the CardScaler is applying for
-   * display — so the exported image is always crisp and full-fidelity.
+   * Returns null if anything fails — callers should handle that gracefully.
+   */
+  const captureCardBlob = useCallback(async (): Promise<Blob | null> => {
+    if (!cardRef.current) return null;
+    const node = cardRef.current;
+
+    // Wait two animation frames so any in-flight images (avatar via the
+    // /api/avatar proxy) have actually painted before we snapshot.
+    await new Promise<void>((r) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => r())),
+    );
+
+    // Wait for all <img> children to finish loading (or 3s timeout).
+    const imgs = Array.from(node.querySelectorAll("img"));
+    await Promise.all(
+      imgs.map(
+        (img) =>
+          new Promise<void>((resolve) => {
+            if (img.complete && img.naturalWidth > 0) return resolve();
+            img.addEventListener("load", () => resolve(), { once: true });
+            img.addEventListener("error", () => resolve(), { once: true });
+            setTimeout(resolve, 3000);
+          }),
+      ),
+    );
+
+    return await toBlob(node, {
+      pixelRatio: 2,
+      width: 750,
+      height: 432,
+      backgroundColor: "transparent",
+      cacheBust: true,
+      filter: (n) =>
+        !(n instanceof HTMLElement && n.dataset.exportIgnore === "1"),
+    });
+  }, []);
+
+  /** Build the standard share text from the current persona. */
+  function buildShareText(): string {
+    if (!persona) return "";
+    return (
+      `Just discovered my Digital DeFi Profile: ${persona.archetype.emoji} ${persona.archetype.name}\n\n` +
+      `"${persona.archetype.description}"\n\n` +
+      `Find yours at https://persona.altura.trade 👇`
+    );
+  }
+
+  /** Log the share event to Postgres (fire-and-forget, raffle entry). */
+  function logShareEntry() {
+    if (!profile?.persona?.archetype) return;
+    const a = profile.persona.archetype;
+    void recordShare({
+      username: profile.username,
+      archetype: { key: a.key, name: a.name, source: a.source },
+      trigger: profile.persona.trigger,
+      isHolder: Boolean(profile.altura?.isHolder),
+      pnlUSD: profile.altura?.pnlUSD ?? null,
+      costBasisUSD: profile.altura?.totalDepositedUSD ?? null,
+      walletAddress: profile.altura?.walletAddress ?? null,
+    });
+  }
+
+  /**
+   * Copy image to clipboard (or fall back to download if clipboard blocked).
+   * Used by the standalone "copy image" button.
    */
   const handleCopyImage = useCallback(async () => {
     if (!persona || copyState === "copying") return;
-    if (!cardRef.current) return;
     setCopyState("copying");
-
     try {
-      const node = cardRef.current;
-      // Wait two animation frames so any in-flight image (avatar via
-      // /api/avatar proxy) has actually painted before we capture.
-      await new Promise<void>((r) =>
-        requestAnimationFrame(() => requestAnimationFrame(() => r())),
-      );
-
-      // Wait for all <img> children to finish loading.
-      const imgs = Array.from(node.querySelectorAll("img"));
-      await Promise.all(
-        imgs.map(
-          (img) =>
-            new Promise<void>((resolve) => {
-              if (img.complete && img.naturalWidth > 0) return resolve();
-              img.addEventListener("load", () => resolve(), { once: true });
-              img.addEventListener("error", () => resolve(), { once: true });
-              // Hard timeout so we never hang the UI on a single broken asset
-              setTimeout(resolve, 3000);
-            }),
-        ),
-      );
-
-      const blob = await toBlob(node, {
-        // 2x for retina-crisp share
-        pixelRatio: 2,
-        // Force the export at the native design dimensions, not the scaled
-        // visual dimensions — CardScaler applies a transform: scale(...)
-        // and html-to-image already accounts for that, but pinning width
-        // here makes the output deterministic.
-        width: 750,
-        height: 432,
-        backgroundColor: "transparent",
-        cacheBust: true,
-        // Skip any node we accidentally tag with this attr (none right now)
-        filter: (n) => !(n instanceof HTMLElement && n.dataset.exportIgnore === "1"),
-      });
-
+      const blob = await captureCardBlob();
       if (!blob) {
         setCopyState("idle");
         return;
       }
-
       try {
         await navigator.clipboard.write([
           new ClipboardItem({ "image/png": blob }),
@@ -204,8 +238,7 @@ export default function Index() {
         setCopyState("done");
         setTimeout(() => setCopyState("idle"), 2000);
       } catch (clipErr) {
-        // Fallback: trigger a download so the user still gets the image
-        console.warn("Clipboard write blocked, falling back to download", clipErr);
+        console.warn("Clipboard blocked, falling back to download", clipErr);
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
@@ -221,34 +254,97 @@ export default function Index() {
       console.error("Copy image failed:", e);
       setCopyState("idle");
     }
-    // cardTheme is intentionally a dep so we re-bind when the user toggles
-    // between Standard / Platinum (cardRef points at a different DOM node).
-  }, [copyState, persona, cardTheme]);
+  }, [copyState, persona, captureCardBlob]);
 
-  function handleShare() {
-    if (!persona) return;
+  /**
+   * Share to X with the card image attached.
+   *
+   * Twitter's web intent (twitter.com/intent/tweet) does NOT accept image
+   * attachments via URL — only text. So we use a layered fallback:
+   *
+   *   1. Web Share API with `files` (mobile + Chrome desktop): native OS
+   *      share sheet → user picks Twitter → text + image both attach in
+   *      one tap. Best UX. Fully sufficient on iOS/Android.
+   *   2. Fallback: copy the image to the clipboard, then open the tweet
+   *      compose window with the text pre-filled, and show a toast telling
+   *      the user to paste (⌘V / Ctrl+V) the image into the compose box.
+   *   3. Final fallback: just open the intent with text-only.
+   */
+  const handleShare = useCallback(async () => {
+    if (!persona || shareState === "sharing") return;
+    setShareState("sharing");
 
-    // Log the raffle entry first (fire-and-forget). We use `keepalive` so
-    // it survives the X intent navigation. Failures are non-fatal — the
-    // share button always works even if the backend is down.
-    if (profile?.persona?.archetype) {
-      const a = profile.persona.archetype;
-      void recordShare({
-        username: profile.username,
-        archetype: { key: a.key, name: a.name, source: a.source },
-        trigger: profile.persona.trigger,
-        isHolder: Boolean(profile.altura?.isHolder),
-        pnlUSD: profile.altura?.pnlUSD ?? null,
-        costBasisUSD: profile.altura?.totalDepositedUSD ?? null,
-        walletAddress: profile.altura?.walletAddress ?? null,
-      });
+    // Log raffle entry first (non-blocking; survives navigation via keepalive)
+    logShareEntry();
+
+    const text = buildShareText();
+
+    try {
+      const blob = await captureCardBlob();
+      const file = blob
+        ? new File([blob], `altura-${persona.username || "card"}.png`, {
+            type: "image/png",
+          })
+        : null;
+
+      // 1) Native Web Share API with files (best mobile UX)
+      if (
+        file &&
+        typeof navigator.canShare === "function" &&
+        navigator.canShare({ files: [file] })
+      ) {
+        try {
+          await navigator.share({
+            text,
+            files: [file],
+          } as ShareData);
+          setShareState("done");
+          setTimeout(() => setShareState("idle"), 2000);
+          return;
+        } catch (shareErr) {
+          // User cancelled — that's fine, just exit.
+          if ((shareErr as DOMException)?.name === "AbortError") {
+            setShareState("idle");
+            return;
+          }
+          // Fall through to clipboard fallback
+          console.warn("Web Share failed, falling back to clipboard", shareErr);
+        }
+      }
+
+      // 2) Clipboard + intent fallback (desktop browsers without Web Share)
+      if (blob) {
+        try {
+          await navigator.clipboard.write([
+            new ClipboardItem({ "image/png": blob }),
+          ]);
+          // Show "image copied — paste in compose" hint
+          setShareState("paste-hint");
+          setTimeout(() => setShareState("idle"), 6000);
+          // Open compose right after, so the user can ⌘V immediately
+          const intent = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
+            text,
+          )}`;
+          window.open(intent, "_blank", "noopener,noreferrer");
+          return;
+        } catch (clipErr) {
+          console.warn("Clipboard write failed too", clipErr);
+        }
+      }
+
+      // 3) Final fallback — text-only intent
+      const intent = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+      window.open(intent, "_blank", "noopener,noreferrer");
+      setShareState("idle");
+    } catch (e) {
+      console.error("Share failed", e);
+      setShareState("idle");
+      // Last-ditch: text-only intent
+      const intent = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+      window.open(intent, "_blank", "noopener,noreferrer");
     }
-
-    const text = encodeURIComponent(
-      `Just discovered my Digital DeFi Profile: ${persona.archetype.emoji} ${persona.archetype.name}\n\n"${persona.archetype.description}"\n\nFind yours 👇`,
-    );
-    window.open(`https://twitter.com/intent/tweet?text=${text}`, "_blank");
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [persona, profile, shareState, captureCardBlob]);
 
   return (
     <div
@@ -536,22 +632,62 @@ export default function Index() {
               >
                 <button
                   onClick={handleShare}
+                  disabled={shareState === "sharing"}
                   className="flex-1 flex items-center justify-center gap-2 px-5 py-3.5 text-sm font-bold tracking-wide active:scale-[0.98]"
                   style={{
-                    background: BRAND,
+                    background: shareState === "done" ? "#3bc99a" : BRAND,
                     color: "#000",
                     borderRadius: "0px",
                     fontFamily: FONT,
                     fontWeight: 700,
-                    transition: "background 0.15s ease",
+                    cursor: shareState === "sharing" ? "wait" : "pointer",
+                    opacity: shareState === "sharing" ? 0.75 : 1,
+                    transition: "background 0.15s ease, opacity 0.15s ease",
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.background = "#4de6b5"; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = BRAND; }}
+                  onMouseEnter={(e) => {
+                    if (shareState === "idle")
+                      e.currentTarget.style.background = "#4de6b5";
+                  }}
+                  onMouseLeave={(e) => {
+                    if (shareState === "idle")
+                      e.currentTarget.style.background = BRAND;
+                  }}
                 >
-                  <svg viewBox="0 0 24 24" className="w-4 h-4 fill-black">
-                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.259 5.63L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                  </svg>
-                  share on X
+                  {shareState === "sharing" ? (
+                    <>
+                      <svg
+                        viewBox="0 0 24 24"
+                        className="w-4 h-4 animate-spin"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <circle cx="12" cy="12" r="10" strokeOpacity="0.25" />
+                        <path d="M12 2a10 10 0 0 1 10 10" strokeLinecap="round" />
+                      </svg>
+                      preparing card…
+                    </>
+                  ) : shareState === "done" ? (
+                    <>
+                      <svg
+                        viewBox="0 0 24 24"
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                      >
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                      shared!
+                    </>
+                  ) : (
+                    <>
+                      <svg viewBox="0 0 24 24" className="w-4 h-4 fill-black">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.259 5.63L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                      </svg>
+                      share on X
+                    </>
+                  )}
                 </button>
                 <button
                   onClick={handleCopyImage}
@@ -612,6 +748,51 @@ export default function Index() {
                   <span className="whitespace-nowrap">try another handle</span>
                 </button>
               </motion.div>
+
+              {/* Paste-hint toast: shown when desktop browser doesn't support
+                  Web Share API with files; we copied the image to clipboard
+                  and opened the X compose window in a new tab. */}
+              <AnimatePresence>
+                {shareState === "paste-hint" && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 8 }}
+                    transition={{ duration: 0.2 }}
+                    className="mt-4 px-5 py-3 text-sm font-mono text-center max-w-md"
+                    style={{
+                      background: "rgba(94,255,202,0.10)",
+                      border: "1px solid rgba(94,255,202,0.35)",
+                      borderRadius: "8px",
+                      color: "#FAFAFA",
+                    }}
+                  >
+                    <span style={{ color: BRAND }}>✓ image copied</span> —
+                    paste it in the X compose window with{" "}
+                    <kbd
+                      style={{
+                        padding: "2px 6px",
+                        background: "rgba(255,255,255,0.10)",
+                        borderRadius: "4px",
+                        fontSize: "0.85em",
+                      }}
+                    >
+                      ⌘V
+                    </kbd>{" "}
+                    /{" "}
+                    <kbd
+                      style={{
+                        padding: "2px 6px",
+                        background: "rgba(255,255,255,0.10)",
+                        borderRadius: "4px",
+                        fontSize: "0.85em",
+                      }}
+                    >
+                      Ctrl+V
+                    </kbd>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           )}
 
