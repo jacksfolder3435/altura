@@ -12,7 +12,7 @@ import FigmaDefiCard from "@/components/figma/FigmaDefiCard";
 import FigmaPlatinumCard from "@/components/figma/FigmaPlatinumCard";
 import CardScaler from "@/components/figma/CardScaler";
 import AnalysisLoader from "@/components/AnalysisLoader";
-import BluOrbBackground from "@/components/BluOrbBackground";
+import BokehBackground from "@/components/BokehBackground";
 
 type Stage = "landing" | "loading" | "result";
 
@@ -188,17 +188,17 @@ export default function Index() {
 
   return (
     <div
-      className="min-h-screen flex flex-col overflow-hidden"
-      style={{ fontFamily: FONT, color: "#FAFAFA" }}
+      className="min-h-screen flex flex-col overflow-hidden relative"
+      style={{ fontFamily: FONT, color: "#FAFAFA", background: "#000503" }}
     >
-      <BluOrbBackground />
+      <BokehBackground />
 
       {/* Header */}
-      <header className="relative z-10 flex items-center px-8 py-6">
-        <img src="/altura-wordmark.svg" alt="Altura" style={{ height: "28px" }} />
+      <header className="relative z-10 flex items-center px-4 sm:px-8 py-5 sm:py-6">
+        <img src="/altura-wordmark.svg" alt="Altura" style={{ height: "26px" }} />
       </header>
 
-      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 py-12">
+      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 py-8 sm:py-12 w-full">
         <AnimatePresence mode="wait">
 
           {/* ─── LANDING ─── */}
@@ -328,13 +328,13 @@ export default function Index() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex flex-col items-center w-full max-w-4xl"
+              className="flex flex-col items-center w-full max-w-3xl mx-auto"
             >
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="text-center mb-6"
+                className="text-center mb-6 px-2"
               >
                 <p
                   className="text-sm font-mono tracking-[0.2em]"
@@ -428,7 +428,10 @@ export default function Index() {
                       pnlValue: pnl.pnl,
                       pnlPercent: pnl.pnlPercent,
                       apyValue: pnl.apy,
-                      username: persona.username,
+                      username: profile?.x?.user?.username ?? persona.username,
+                      avatarUrl: profile?.x?.user?.profile_image_url
+                        // X returns _normal (48x48). Bump to _400x400 for crisp render.
+                        ?.replace(/_normal\.(jpg|jpeg|png|webp)/i, "_400x400.$1"),
                     }}
                   />
                 ) : (
@@ -437,7 +440,9 @@ export default function Index() {
                     data={{
                       archetype: persona.archetype.name,
                       description: persona.archetype.description,
-                      username: persona.username,
+                      username: profile?.x?.user?.username ?? persona.username,
+                      avatarUrl: profile?.x?.user?.profile_image_url
+                        ?.replace(/_normal\.(jpg|jpeg|png|webp)/i, "_400x400.$1"),
                     }}
                   />
                 )}
@@ -448,7 +453,7 @@ export default function Index() {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.7 }}
-                className="flex gap-3 mt-8 w-full"
+                className="flex flex-col sm:flex-row gap-3 mt-8 w-full max-w-3xl"
               >
                 <button
                   onClick={handleShare}

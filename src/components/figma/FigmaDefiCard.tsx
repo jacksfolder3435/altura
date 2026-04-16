@@ -21,6 +21,8 @@ export interface DefiCardData {
   archetype: string;
   description: string;
   username?: string;
+  /** X profile picture URL (from X API `profile_image_url`). */
+  avatarUrl?: string;
 }
 
 interface Props {
@@ -76,6 +78,47 @@ const FigmaDefiCard = forwardRef<HTMLDivElement, Props>(function FigmaDefiCard(
       <div className="absolute h-[20.388px] left-[34px] top-[35px] w-[84px]">
         <img alt="Altura" className="absolute block max-w-none size-full" src={imgVector3} />
       </div>
+
+      {/* User profile chip (avatar + @handle), top-right */}
+      {(data.username || data.avatarUrl) && (
+        <div
+          className="absolute flex items-center gap-[10px]"
+          style={{ right: 34, top: 28, height: 44 }}
+        >
+          {data.username && (
+            <p
+              className="m-0"
+              style={{
+                fontFamily: "'Geist Mono', monospace",
+                fontWeight: 500,
+                fontSize: 14,
+                lineHeight: 1.1,
+                letterSpacing: "-0.2px",
+                color: "#FFFFFF",
+                textShadow: "0 1px 3px rgba(0,0,0,0.5)",
+              }}
+            >
+              @{data.username}
+            </p>
+          )}
+          {data.avatarUrl && (
+            <img
+              src={data.avatarUrl}
+              alt=""
+              referrerPolicy="no-referrer"
+              crossOrigin="anonymous"
+              className="rounded-full"
+              style={{
+                width: 40,
+                height: 40,
+                objectFit: "cover",
+                border: "1.5px solid rgba(255,255,255,0.4)",
+                boxShadow: "0 2px 10px rgba(0,0,0,0.5)",
+              }}
+            />
+          )}
+        </div>
+      )}
 
       {/* Content stack: badge → archetype → description (QR is positioned
           absolutely below so it never overlaps the footer URL) */}

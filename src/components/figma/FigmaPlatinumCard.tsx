@@ -33,7 +33,9 @@ export interface PlatinumPnlData {
   pnlValue: string;         // "+$4,270"
   pnlPercent: string;       // "(+50,7%)"
   apyValue: string;         // "82,4%"
-  username?: string;        // shown in the alturanft.com/persona footer
+  username?: string;        // X handle (without @)
+  /** X profile picture URL (from X API `profile_image_url`). */
+  avatarUrl?: string;
 }
 
 interface Props {
@@ -302,6 +304,47 @@ const FigmaPlatinumCard = forwardRef<HTMLDivElement, Props>(function FigmaPlatin
           APY
         </p>
       </div>
+
+      {/* User profile chip (avatar + @handle), top-right next to QR */}
+      {(data.username || data.avatarUrl) && (
+        <div
+          className="absolute flex items-center gap-[8px]"
+          style={{ left: 480, top: 47, height: 50 }}
+        >
+          {data.avatarUrl && (
+            <img
+              src={data.avatarUrl}
+              alt=""
+              referrerPolicy="no-referrer"
+              crossOrigin="anonymous"
+              className="rounded-full"
+              style={{
+                width: 36,
+                height: 36,
+                objectFit: "cover",
+                border: "1.5px solid rgba(94,255,202,0.45)",
+                boxShadow: "0 0 12px rgba(94,255,202,0.25)",
+              }}
+            />
+          )}
+          {data.username && (
+            <p
+              className="m-0"
+              style={{
+                fontFamily: "'Geist Mono', monospace",
+                fontWeight: 500,
+                fontSize: 13,
+                lineHeight: 1.1,
+                letterSpacing: "-0.2px",
+                color: "rgba(220,235,226,0.95)",
+                textShadow: "0 1px 2px rgba(0,0,0,0.4)",
+              }}
+            >
+              @{data.username}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* QR code (top-right) */}
       <div className="absolute border border-black border-solid content-stretch flex items-center justify-center left-[654px] p-[4px] rounded-[13px] top-[35px]">
