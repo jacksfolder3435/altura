@@ -105,8 +105,6 @@ const FigmaDefiCard = forwardRef<HTMLDivElement, Props>(function FigmaDefiCard(
             <img
               src={data.avatarUrl}
               alt=""
-              referrerPolicy="no-referrer"
-              crossOrigin="anonymous"
               className="rounded-full"
               style={{
                 width: 40,

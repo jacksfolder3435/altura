@@ -315,8 +315,6 @@ const FigmaPlatinumCard = forwardRef<HTMLDivElement, Props>(function FigmaPlatin
             <img
               src={data.avatarUrl}
               alt=""
-              referrerPolicy="no-referrer"
-              crossOrigin="anonymous"
               className="rounded-full"
               style={{
                 width: 36,

@@ -4,6 +4,7 @@ import rateLimit from "express-rate-limit";
 import { config, isDatabaseConfigured } from "./config.js";
 import { profileRouter } from "./routes/profile.js";
 import { shareRouter } from "./routes/share.js";
+import { avatarRouter } from "./routes/avatar.js";
 
 const app = express();
 
@@ -20,14 +21,17 @@ app.use(
   }),
 );
 
-// Per-IP rate limit on the API
+// Per-IP rate limit on the API. Skip the avatar proxy — it's idempotent
+// and only fetches whitelisted Twitter image hosts, so the existing
+// browser-side image cache will absorb most repeats anyway.
 app.use(
   "/api",
   rateLimit({
     windowMs: 60 * 1000,
-    limit: 30,
+    limit: 60,
     standardHeaders: "draft-7",
     legacyHeaders: false,
+    skip: (req) => req.path.startsWith("/avatar"),
   }),
 );
 
@@ -37,6 +41,7 @@ app.get("/health", (_req, res) => {
 
 app.use("/api", profileRouter);
 app.use("/api", shareRouter);
+app.use("/api", avatarRouter);
 
 app.listen(config.port, () => {
   // eslint-disable-next-line no-console

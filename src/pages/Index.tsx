@@ -7,7 +7,8 @@ import {
   type AlturaSummary,
   type ProfileResponse,
 } from "@/lib/alturaApi";
-import { renderCardToCanvas, type CardTheme, type PnlData } from "@/components/SocialCard";
+import { type CardTheme, type PnlData } from "@/components/SocialCard";
+import { toBlob } from "html-to-image";
 import FigmaDefiCard from "@/components/figma/FigmaDefiCard";
 import FigmaPlatinumCard from "@/components/figma/FigmaPlatinumCard";
 import CardScaler from "@/components/figma/CardScaler";
@@ -140,25 +141,88 @@ export default function Index() {
     setTimeout(() => inputRef.current?.focus(), 100);
   }
 
+  /**
+   * Capture the live card DOM (the actual Figma-styled element with avatar,
+   * @handle, PnL, APY, etc.) and copy it to the clipboard as a PNG.
+   *
+   * We render the cardRef at its NATIVE 750x432 size (via html-to-image)
+   * regardless of any responsive scaling the CardScaler is applying for
+   * display — so the exported image is always crisp and full-fidelity.
+   */
   const handleCopyImage = useCallback(async () => {
     if (!persona || copyState === "copying") return;
+    if (!cardRef.current) return;
     setCopyState("copying");
+
     try {
-      const canvas = await renderCardToCanvas(persona, cardTheme);
-      canvas.toBlob(async (blob) => {
-        if (!blob) { setCopyState("idle"); return; }
-        try {
-          await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
-          setCopyState("done");
-          setTimeout(() => setCopyState("idle"), 2000);
-        } catch {
-          setCopyState("idle");
-        }
-      }, "image/png");
+      const node = cardRef.current;
+      // Wait two animation frames so any in-flight image (avatar via
+      // /api/avatar proxy) has actually painted before we capture.
+      await new Promise<void>((r) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => r())),
+      );
+
+      // Wait for all <img> children to finish loading.
+      const imgs = Array.from(node.querySelectorAll("img"));
+      await Promise.all(
+        imgs.map(
+          (img) =>
+            new Promise<void>((resolve) => {
+              if (img.complete && img.naturalWidth > 0) return resolve();
+              img.addEventListener("load", () => resolve(), { once: true });
+              img.addEventListener("error", () => resolve(), { once: true });
+              // Hard timeout so we never hang the UI on a single broken asset
+              setTimeout(resolve, 3000);
+            }),
+        ),
+      );
+
+      const blob = await toBlob(node, {
+        // 2x for retina-crisp share
+        pixelRatio: 2,
+        // Force the export at the native design dimensions, not the scaled
+        // visual dimensions — CardScaler applies a transform: scale(...)
+        // and html-to-image already accounts for that, but pinning width
+        // here makes the output deterministic.
+        width: 750,
+        height: 432,
+        backgroundColor: "transparent",
+        cacheBust: true,
+        // Skip any node we accidentally tag with this attr (none right now)
+        filter: (n) => !(n instanceof HTMLElement && n.dataset.exportIgnore === "1"),
+      });
+
+      if (!blob) {
+        setCopyState("idle");
+        return;
+      }
+
+      try {
+        await navigator.clipboard.write([
+          new ClipboardItem({ "image/png": blob }),
+        ]);
+        setCopyState("done");
+        setTimeout(() => setCopyState("idle"), 2000);
+      } catch (clipErr) {
+        // Fallback: trigger a download so the user still gets the image
+        console.warn("Clipboard write blocked, falling back to download", clipErr);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `altura-${persona.username || "card"}.png`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        setCopyState("done");
+        setTimeout(() => setCopyState("idle"), 2000);
+      }
     } catch (e) {
       console.error("Copy image failed:", e);
       setCopyState("idle");
     }
+    // cardTheme is intentionally a dep so we re-bind when the user toggles
+    // between Standard / Platinum (cardRef points at a different DOM node).
   }, [copyState, persona, cardTheme]);
 
   function handleShare() {
@@ -418,35 +482,50 @@ export default function Index() {
                 })}
               </motion.div>
 
-              <CardScaler maxWidth={750}>
-                {cardTheme === "platinum" && pnl ? (
-                  <FigmaPlatinumCard
-                    ref={cardRef}
-                    data={{
-                      archetype: persona.archetype.name,
-                      description: persona.archetype.description,
-                      pnlValue: pnl.pnl,
-                      pnlPercent: pnl.pnlPercent,
-                      apyValue: pnl.apy,
-                      username: profile?.x?.user?.username ?? persona.username,
-                      avatarUrl: profile?.x?.user?.profile_image_url
-                        // X returns _normal (48x48). Bump to _400x400 for crisp render.
-                        ?.replace(/_normal\.(jpg|jpeg|png|webp)/i, "_400x400.$1"),
-                    }}
-                  />
-                ) : (
-                  <FigmaDefiCard
-                    ref={cardRef}
-                    data={{
-                      archetype: persona.archetype.name,
-                      description: persona.archetype.description,
-                      username: profile?.x?.user?.username ?? persona.username,
-                      avatarUrl: profile?.x?.user?.profile_image_url
-                        ?.replace(/_normal\.(jpg|jpeg|png|webp)/i, "_400x400.$1"),
-                    }}
-                  />
-                )}
-              </CardScaler>
+              {(() => {
+                // X profile_image_url is _normal (48x48) and served from
+                // pbs.twimg.com without CORS — proxy it through our backend
+                // both to upscale (_400x400) AND to make it canvas-safe so
+                // the share/copy image capture can render the avatar.
+                const rawAvatar = profile?.x?.user?.profile_image_url;
+                const upscaled = rawAvatar?.replace(
+                  /_normal\.(jpg|jpeg|png|webp)/i,
+                  "_400x400.$1",
+                );
+                const proxiedAvatar = upscaled
+                  ? `/api/avatar?u=${encodeURIComponent(upscaled)}`
+                  : undefined;
+                const handle = profile?.x?.user?.username ?? persona.username;
+
+                return (
+                  <CardScaler maxWidth={750}>
+                    {cardTheme === "platinum" && pnl ? (
+                      <FigmaPlatinumCard
+                        ref={cardRef}
+                        data={{
+                          archetype: persona.archetype.name,
+                          description: persona.archetype.description,
+                          pnlValue: pnl.pnl,
+                          pnlPercent: pnl.pnlPercent,
+                          apyValue: pnl.apy,
+                          username: handle,
+                          avatarUrl: proxiedAvatar,
+                        }}
+                      />
+                    ) : (
+                      <FigmaDefiCard
+                        ref={cardRef}
+                        data={{
+                          archetype: persona.archetype.name,
+                          description: persona.archetype.description,
+                          username: handle,
+                          avatarUrl: proxiedAvatar,
+                        }}
+                      />
+                    )}
+                  </CardScaler>
+                );
+              })()}
 
               {/* Action buttons */}
               <motion.div
