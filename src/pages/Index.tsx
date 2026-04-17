@@ -410,8 +410,12 @@ export default function Index() {
                     value={input}
                     onChange={(e) => { setInput(e.target.value); setError(""); }}
                     placeholder="@yourhandle or x.com/yourhandle"
-                    className="w-full pl-11 pr-4 py-4 text-sm focus:outline-none"
+                    className="w-full pl-11 pr-4 py-4 focus:outline-none"
                     style={{
+                      // 16px minimum prevents iOS Safari from auto-zooming
+                      // into the input on focus (which causes the "wonky"
+                      // mobile layout shift).
+                      fontSize: 16,
                       background: "#1a1a1a",
                       border: "1px solid rgba(94,255,202,0.25)",
                       borderRadius: "0px",
