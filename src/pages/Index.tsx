@@ -347,8 +347,8 @@ export default function Index() {
 
   return (
     <div
-      className="min-h-screen flex flex-col overflow-hidden relative"
-      style={{ fontFamily: FONT, color: "#FAFAFA", background: "#000503" }}
+      className="min-h-screen flex flex-col overflow-x-hidden relative"
+      style={{ fontFamily: FONT, color: "#FAFAFA", background: "#000503", maxWidth: "100vw" }}
     >
       <BokehBackground />
 
@@ -541,7 +541,7 @@ export default function Index() {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.7 }}
-                className="flex flex-col sm:flex-row gap-3 mt-8 w-full max-w-3xl"
+                className="flex flex-col sm:flex-row gap-3 mt-8 w-full max-w-3xl mx-auto"
               >
                 <button
                   onClick={handleShare}

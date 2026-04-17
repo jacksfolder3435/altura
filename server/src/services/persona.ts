@@ -417,6 +417,8 @@ const KW_BASED_TAKES = [
   "degen",
 ];
 
+// Trimmed: dropped gas, mint, pump, dump, wallet, bridge, yield, whale
+// (too ambiguous in non-crypto contexts). Threshold bumped 1 → 2.
 const KW_CRYPTO_NATIVE = [
   "bitcoin",
   "btc",
@@ -430,26 +432,18 @@ const KW_CRYPTO_NATIVE = [
   "blockchain",
   "dao",
   "staking",
-  "yield",
   "dex",
   "cex",
   "tokenomics",
   "altcoin",
-  "whale",
-  "gas",
   "layer 2",
   "l2",
-  "bridge",
   "liquidity",
   "tvl",
   "onchain",
   "on-chain",
   "hodl",
   "fud",
-  "pump",
-  "dump",
-  "mint",
-  "wallet",
   "maxi",
   "hodler",
   "binance",
@@ -563,7 +557,7 @@ function classifyX(xProfile: XProfile | null): {
     // giving it a slightly lower score when tied (threshold is 1 so any
     // match qualifies, but a specific title with the same raw count wins
     // because its threshold is higher → lower score fraction).
-    { archetype: X_TITLES.cryptoNative!,    trigger: "x:crypto_native",  matches: s.cryptoNative, threshold: 1 },
+    { archetype: X_TITLES.cryptoNative!,    trigger: "x:crypto_native",  matches: s.cryptoNative, threshold: 2 },
   ];
 
   // Filter to qualifying rules (score >= 1), then pick highest score.

@@ -43,6 +43,10 @@ export default function CardScaler({
         maxWidth,
         height: designHeight * scale,
         position: "relative",
+        // Prevent the unscaled 750px card from pushing the viewport
+        // wider on mobile during the first render (scale=1 → 750px,
+        // then ResizeObserver fires and scales it down).
+        overflow: "hidden",
       }}
     >
       <div
