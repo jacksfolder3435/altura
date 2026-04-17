@@ -30,12 +30,16 @@ const imgQrCode = `${A}/platinum-qr.svg`;
 export interface PlatinumPnlData {
   archetype: string;        // "Baby Whale"
   description: string;      // "$1K-$5K DEPOSITED. NOT QUITE GIGACHAD YET. BUT YOU'RE ON"
-  pnlValue: string;         // "+$4,270"
-  pnlPercent: string;       // "(+50,7%)"
-  apyValue: string;         // "82,4%"
+  /** PnL fields — undefined when user is not a holder. */
+  pnlValue?: string;        // "+$4,270"
+  pnlPercent?: string;      // "(+50,7%)"
+  apyValue?: string;        // "82,4%"
   username?: string;        // X handle (without @)
   /** X profile picture URL (from X API `profile_image_url`). */
   avatarUrl?: string;
+  /** Whether the user is a vault holder. Controls whether PnL or the
+   *  "Enter the vault" CTA is shown. */
+  isHolder?: boolean;
 }
 
 interface Props {
@@ -242,68 +246,118 @@ const FigmaPlatinumCard = forwardRef<HTMLDivElement, Props>(function FigmaPlatin
         {data.description}
       </p>
 
-      {/* PNL block (left): big value + label */}
-      <div className="absolute content-stretch flex flex-col gap-[16.981px] items-start left-[32px] text-[transparent] top-[262.34px]">
-        <p
-          className="bg-clip-text leading-[1.05] not-italic relative shrink-0 text-[71.544px] text-center tracking-[-1.4309px] whitespace-nowrap"
-          style={{
-            fontFamily: "'Funnel Display', sans-serif",
-            fontWeight: 400,
-            backgroundImage:
-              "linear-gradient(86.86deg, rgb(85, 130, 100) 10.518%, rgb(56, 92, 68) 158.48%)",
-          }}
-        >
-          {data.pnlValue}
-        </p>
-        <p
-          className="bg-clip-text font-medium leading-[21.19px] min-w-full relative shrink-0 text-[16.981px] uppercase w-[min-content]"
-          style={{
-            fontFamily: "'Geist Mono', monospace",
-            backgroundImage:
-              "linear-gradient(171.86deg, rgb(95, 107, 99) 10.448%, rgb(186, 209, 193) 53.323%, rgb(255, 255, 255) 73.433%)",
-          }}
-        >
-          PNL
-        </p>
-      </div>
+      {/* === PnL area: holder sees numbers, non-holder sees CTA === */}
+      {data.isHolder && data.pnlValue ? (
+        <>
+          {/* PNL block (left): big value + label */}
+          <div className="absolute content-stretch flex flex-col gap-[16.981px] items-start left-[32px] text-[transparent] top-[262.34px]">
+            <p
+              className="bg-clip-text leading-[1.05] not-italic relative shrink-0 text-[71.544px] text-center tracking-[-1.4309px] whitespace-nowrap"
+              style={{
+                fontFamily: "'Funnel Display', sans-serif",
+                fontWeight: 400,
+                backgroundImage:
+                  "linear-gradient(86.86deg, rgb(85, 130, 100) 10.518%, rgb(56, 92, 68) 158.48%)",
+              }}
+            >
+              {data.pnlValue}
+            </p>
+            <p
+              className="bg-clip-text font-medium leading-[21.19px] min-w-full relative shrink-0 text-[16.981px] uppercase w-[min-content]"
+              style={{
+                fontFamily: "'Geist Mono', monospace",
+                backgroundImage:
+                  "linear-gradient(171.86deg, rgb(95, 107, 99) 10.448%, rgb(186, 209, 193) 53.323%, rgb(255, 255, 255) 73.433%)",
+              }}
+            >
+              PNL
+            </p>
+          </div>
 
-      {/* Percent (next to PNL value) */}
-      <p
-        className="-translate-x-1/2 absolute bg-clip-text leading-[1.05] left-[351.01px] not-italic text-[27.792px] text-[transparent] text-center top-[294.13px] tracking-[-0.5558px] whitespace-nowrap"
-        style={{
-          fontFamily: "'Funnel Display', sans-serif",
-          fontWeight: 400,
-          backgroundImage:
-            "linear-gradient(3.77deg, rgb(51, 141, 111) 3.7464%, rgb(0, 52, 35) 71.164%)",
-        }}
-      >
-        {data.pnlPercent}
-      </p>
+          {/* Percent (next to PNL value) */}
+          <p
+            className="-translate-x-1/2 absolute bg-clip-text leading-[1.05] left-[351.01px] not-italic text-[27.792px] text-[transparent] text-center top-[294.13px] tracking-[-0.5558px] whitespace-nowrap"
+            style={{
+              fontFamily: "'Funnel Display', sans-serif",
+              fontWeight: 400,
+              backgroundImage:
+                "linear-gradient(3.77deg, rgb(51, 141, 111) 3.7464%, rgb(0, 52, 35) 71.164%)",
+            }}
+          >
+            {data.pnlPercent}
+          </p>
 
-      {/* APY block (right) */}
-      <div className="absolute content-stretch flex flex-col gap-[16.981px] items-start left-[464.45px] text-[transparent] top-[261px]">
-        <p
-          className="bg-clip-text leading-[1.05] not-italic relative shrink-0 text-[71.544px] text-center tracking-[-1.4309px] whitespace-nowrap"
-          style={{
-            fontFamily: "'Funnel Display', sans-serif",
-            fontWeight: 400,
-            backgroundImage:
-              "linear-gradient(87.59deg, rgb(85, 130, 100) 10.518%, rgb(56, 92, 68) 158.48%)",
-          }}
+          {/* APY block (right) */}
+          <div className="absolute content-stretch flex flex-col gap-[16.981px] items-start left-[464.45px] text-[transparent] top-[261px]">
+            <p
+              className="bg-clip-text leading-[1.05] not-italic relative shrink-0 text-[71.544px] text-center tracking-[-1.4309px] whitespace-nowrap"
+              style={{
+                fontFamily: "'Funnel Display', sans-serif",
+                fontWeight: 400,
+                backgroundImage:
+                  "linear-gradient(87.59deg, rgb(85, 130, 100) 10.518%, rgb(56, 92, 68) 158.48%)",
+              }}
+            >
+              {data.apyValue}
+            </p>
+            <p
+              className="bg-clip-text font-medium leading-[21.19px] min-w-full relative shrink-0 text-[16.981px] uppercase w-[min-content]"
+              style={{
+                fontFamily: "'Geist Mono', monospace",
+                backgroundImage:
+                  "linear-gradient(169.45deg, rgb(95, 107, 99) 10.448%, rgb(186, 209, 193) 53.323%, rgb(255, 255, 255) 73.433%)",
+              }}
+            >
+              APY
+            </p>
+          </div>
+        </>
+      ) : (
+        /* Non-holder: replace PnL block with a CTA to enter the vault */
+        <div
+          className="absolute flex flex-col items-start gap-[14px]"
+          style={{ left: 32, top: 265, right: 150 }}
         >
-          {data.apyValue}
-        </p>
-        <p
-          className="bg-clip-text font-medium leading-[21.19px] min-w-full relative shrink-0 text-[16.981px] uppercase w-[min-content]"
-          style={{
-            fontFamily: "'Geist Mono', monospace",
-            backgroundImage:
-              "linear-gradient(169.45deg, rgb(95, 107, 99) 10.448%, rgb(186, 209, 193) 53.323%, rgb(255, 255, 255) 73.433%)",
-          }}
-        >
-          APY
-        </p>
-      </div>
+          <p
+            className="m-0"
+            style={{
+              fontFamily: "'Geist Mono', monospace",
+              fontWeight: 500,
+              fontSize: 14,
+              lineHeight: "22px",
+              color: "rgba(220, 235, 226, 0.75)",
+              textTransform: "uppercase",
+              letterSpacing: "0.04em",
+            }}
+          >
+            No position in the Altura vault yet.
+          </p>
+          <a
+            href="https://www.altura.trade/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2"
+            style={{
+              fontFamily: "'Funnel Display', sans-serif",
+              fontWeight: 700,
+              fontSize: 18,
+              lineHeight: 1.2,
+              padding: "10px 24px",
+              borderRadius: "6px",
+              background: "#5EFFCA",
+              color: "#000503",
+              textDecoration: "none",
+              letterSpacing: "-0.01em",
+              transition: "background 0.15s ease",
+            }}
+          >
+            Enter the vault
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor">
+              <path d="M6.22 3.22a.75.75 0 011.06 0l4.25 4.25a.75.75 0 010 1.06l-4.25 4.25a.75.75 0 01-1.06-1.06L9.94 8 6.22 4.28a.75.75 0 010-1.06z" />
+            </svg>
+          </a>
+        </div>
+      )}
 
       {/* User profile chip (avatar + @handle), top-right next to QR */}
       {(data.username || data.avatarUrl) && (

@@ -7,9 +7,8 @@ import {
   type AlturaSummary,
   type ProfileResponse,
 } from "@/lib/alturaApi";
-import { type CardTheme, type PnlData } from "@/components/SocialCard";
+import { type PnlData } from "@/components/SocialCard";
 import { toBlob } from "html-to-image";
-import FigmaDefiCard from "@/components/figma/FigmaDefiCard";
 import FigmaPlatinumCard from "@/components/figma/FigmaPlatinumCard";
 import CardScaler from "@/components/figma/CardScaler";
 import AnalysisLoader from "@/components/AnalysisLoader";
@@ -66,7 +65,7 @@ export default function Index() {
   const [shareState, setShareState] = useState<
     "idle" | "sharing" | "done" | "paste-hint"
   >("idle");
-  const [cardTheme, setCardTheme] = useState<CardTheme>("dark");
+  // cardTheme removed — everyone gets the Platinum card now.
   const [pnl, setPnl] = useState<PnlData | null>(null);
   const [isAlturaHolder, setIsAlturaHolder] = useState(false);
   /** Backend response we use for sharing/raffle logging. */
@@ -100,7 +99,7 @@ export default function Index() {
       if (fetched.altura?.isHolder) {
         setIsAlturaHolder(true);
         setPnl(alturaToPnl(fetched.altura));
-        setCardTheme("platinum");
+        // (platinum is now the only card — no theme switch needed)
       } else {
         setIsAlturaHolder(false);
         setPnl(null);
@@ -146,7 +145,7 @@ export default function Index() {
     setProfile(null);
     setPnl(null);
     setIsAlturaHolder(false);
-    setCardTheme("dark");
+    // (platinum is now the only card — no theme reset needed)
     setTimeout(() => inputRef.current?.focus(), 100);
   }
 
@@ -500,89 +499,13 @@ export default function Index() {
                   className="text-sm font-mono tracking-[0.2em]"
                   style={{ color: "#FFFFFF", opacity: 0.95 }}
                 >
-                  YOUR DIGITAL DEFI PROFILE IS READY
+                  Your Altura card is ready
                 </p>
               </motion.div>
 
-              {/* Theme toggle: Standard ↔ Platinum (hover tooltip on locked) */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5 }}
-                className="flex items-center mb-6 gap-1 p-1.5"
-                style={{
-                  background: "rgba(255,255,255,0.06)",
-                  border: "1px solid rgba(255,255,255,0.12)",
-                  borderRadius: "10px",
-                }}
-              >
-                {(["dark", "platinum"] as CardTheme[]).map((t) => {
-                  const locked = t === "platinum" && !isAlturaHolder;
-                  const active = cardTheme === t;
-                  const label = t === "platinum" ? "✦ Platinum" : "Standard";
-                  return (
-                    <div key={t} className="relative group">
-                      <button
-                        onClick={() => !locked && setCardTheme(t)}
-                        disabled={locked}
-                        className="flex items-center gap-1.5 px-6 py-2 text-sm font-bold tracking-[0.18em] uppercase transition-all"
-                        style={{
-                          background: active
-                            ? (t === "platinum" ? "#c8b4ff" : BRAND)
-                            : "transparent",
-                          color: active
-                            ? (t === "platinum" ? "#0c0c14" : "#000")
-                            : "#FFFFFF",
-                          borderRadius: "6px",
-                          fontFamily: FONT,
-                          opacity: locked ? 0.4 : active ? 1 : 0.9,
-                          cursor: locked ? "not-allowed" : "pointer",
-                          transition: "all 0.2s ease",
-                        }}
-                      >
-                        {locked ? "🔒 Platinum" : label}
-                      </button>
-                      {/* Hover tooltip — only renders when this is the locked Platinum button */}
-                      {locked && (
-                        <div
-                          className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-3 px-4 py-2.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50"
-                          style={{
-                            background: "rgba(15, 18, 16, 0.96)",
-                            border: "1px solid rgba(255,255,255,0.15)",
-                            backdropFilter: "blur(10px)",
-                            boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          <p
-                            className="text-xs font-mono"
-                            style={{ color: "#FFFFFF", margin: 0 }}
-                          >
-                            Connect your X account to{" "}
-                            <span style={{ color: BRAND }}>Altura</span> and deposit funds to unlock.
-                          </p>
-                          {/* Tooltip arrow */}
-                          <div
-                            aria-hidden
-                            className="absolute left-1/2 -translate-x-1/2 -top-1.5 w-3 h-3 rotate-45"
-                            style={{
-                              background: "rgba(15, 18, 16, 0.96)",
-                              borderTop: "1px solid rgba(255,255,255,0.15)",
-                              borderLeft: "1px solid rgba(255,255,255,0.15)",
-                            }}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </motion.div>
-
+              {/* Single Platinum card — everyone gets this.
+                  Holders see PnL. Non-holders see a CTA to enter the vault. */}
               {(() => {
-                // X profile_image_url is _normal (48x48) and served from
-                // pbs.twimg.com without CORS — proxy it through our backend
-                // both to upscale (_400x400) AND to make it canvas-safe so
-                // the share/copy image capture can render the avatar.
                 const rawAvatar = profile?.x?.user?.profile_image_url;
                 const upscaled = rawAvatar?.replace(
                   /_normal\.(jpg|jpeg|png|webp)/i,
@@ -595,30 +518,20 @@ export default function Index() {
 
                 return (
                   <CardScaler maxWidth={750}>
-                    {cardTheme === "platinum" && pnl ? (
-                      <FigmaPlatinumCard
-                        ref={cardRef}
-                        data={{
-                          archetype: persona.archetype.name,
-                          description: persona.archetype.description,
-                          pnlValue: pnl.pnl,
-                          pnlPercent: pnl.pnlPercent,
-                          apyValue: pnl.apy,
-                          username: handle,
-                          avatarUrl: proxiedAvatar,
-                        }}
-                      />
-                    ) : (
-                      <FigmaDefiCard
-                        ref={cardRef}
-                        data={{
-                          archetype: persona.archetype.name,
-                          description: persona.archetype.description,
-                          username: handle,
-                          avatarUrl: proxiedAvatar,
-                        }}
-                      />
-                    )}
+                    <FigmaPlatinumCard
+                      ref={cardRef}
+                      data={{
+                        archetype: persona.archetype.name,
+                        description: persona.archetype.description,
+                        // PnL shown when holder, undefined otherwise
+                        pnlValue: pnl?.pnl,
+                        pnlPercent: pnl?.pnlPercent,
+                        apyValue: pnl?.apy,
+                        username: handle,
+                        avatarUrl: proxiedAvatar,
+                        isHolder: isAlturaHolder,
+                      }}
+                    />
                   </CardScaler>
                 );
               })()}
