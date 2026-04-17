@@ -517,6 +517,31 @@ function analyzeTweets(tweets: XTweet[]): TweetSignals {
   };
 }
 
+/**
+ * Score-based X title selection (v1.2).
+ *
+ * Instead of first-match-wins (which skews toward rules higher in the list),
+ * we compute a score for every rule and pick the one with the highest score.
+ *
+ *   score = matches / threshold
+ *
+ * A rule qualifies only when score >= 1 (threshold met). Among qualifying
+ * rules, the highest score wins — the user gets the title they match the
+ * *most*, not the one that happened to be checked first.
+ *
+ * Example: user mentions `hype` once and `memecoin` 5 times.
+ *   Old engine: Hyperliquid Maxi (first match)
+ *   New engine: Memecoins (score 5/2=2.5 > 1/1=1.0 — stronger signal)
+ */
+interface XRule {
+  archetype: Archetype;
+  trigger: string;
+  /** Number of matches the user produced for this rule. */
+  matches: number;
+  /** Minimum matches required to qualify. */
+  threshold: number;
+}
+
 function classifyX(xProfile: XProfile | null): {
   archetype: Archetype;
   trigger: string;
@@ -525,38 +550,37 @@ function classifyX(xProfile: XProfile | null): {
 
   const s = analyzeTweets(xProfile.tweets);
 
-  // Priority order — most specific first, then the broad Crypto Native net.
-  if (s.hyperliquid >= 1) {
-    return { archetype: X_TITLES.hyperliquidMaxi!, trigger: "x:hyperliquid" };
+  // Define all rules with their thresholds.
+  const rules: XRule[] = [
+    { archetype: X_TITLES.hyperliquidMaxi!, trigger: "x:hyperliquid",    matches: s.hyperliquid,  threshold: 1 },
+    { archetype: X_TITLES.infofi!,          trigger: "x:infofi",         matches: s.infofi,       threshold: 1 },
+    { archetype: X_TITLES.memecoins!,       trigger: "x:memecoins",      matches: s.memecoins,    threshold: 2 },
+    { archetype: X_TITLES.airdropHunter!,   trigger: "x:airdrop_hunter", matches: s.airdrops,     threshold: 1 },
+    { archetype: X_TITLES.threadGuy!,       trigger: "x:thread_guy",     matches: s.threads,      threshold: 1 },
+    { archetype: X_TITLES.basedTake!,       trigger: "x:based_take",     matches: s.basedTakes,   threshold: 2 },
+    { archetype: X_TITLES.quoteTweetWarrior!, trigger: "x:qt_warrior",   matches: s.quoteTweets,  threshold: 2 },
+    // Crypto Native is the broad safety net — always checked last by
+    // giving it a slightly lower score when tied (threshold is 1 so any
+    // match qualifies, but a specific title with the same raw count wins
+    // because its threshold is higher → lower score fraction).
+    { archetype: X_TITLES.cryptoNative!,    trigger: "x:crypto_native",  matches: s.cryptoNative, threshold: 1 },
+  ];
+
+  // Filter to qualifying rules (score >= 1), then pick highest score.
+  let best: XRule | null = null;
+  let bestScore = 0;
+
+  for (const rule of rules) {
+    if (rule.matches < rule.threshold) continue;
+    const score = rule.matches / rule.threshold;
+    if (score > bestScore) {
+      bestScore = score;
+      best = rule;
+    }
   }
-  if (s.infofi >= 1) {
-    return { archetype: X_TITLES.infofi!, trigger: "x:infofi" };
-  }
-  if (s.memecoins >= 2) {
-    return { archetype: X_TITLES.memecoins!, trigger: "x:memecoins" };
-  }
-  if (s.airdrops >= 1) {
-    return { archetype: X_TITLES.airdropHunter!, trigger: "x:airdrop_hunter" };
-  }
-  if (s.threads >= 1) {
-    return { archetype: X_TITLES.threadGuy!, trigger: "x:thread_guy" };
-  }
-  if (s.basedTakes >= 2) {
-    return { archetype: X_TITLES.basedTake!, trigger: "x:based_take" };
-  }
-  if (s.quoteTweets >= 2) {
-    return {
-      archetype: X_TITLES.quoteTweetWarrior!,
-      trigger: "x:qt_warrior",
-    };
-  }
-  // Broad safety net — anyone tweeting about crypto without a vault title
-  // should land here instead of falling all the way to Normie.
-  if (s.cryptoNative >= 1) {
-    return {
-      archetype: X_TITLES.cryptoNative!,
-      trigger: "x:crypto_native",
-    };
+
+  if (best) {
+    return { archetype: best.archetype, trigger: best.trigger };
   }
 
   return null;

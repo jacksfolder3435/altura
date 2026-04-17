@@ -378,17 +378,17 @@ export default function Index() {
                 className="text-5xl sm:text-6xl leading-tight tracking-tight mb-6"
                 style={{ color: "#FAFAFA", fontWeight: 700, letterSpacing: "-0.03em" }}
               >
-                discover your<br /><span className="whitespace-nowrap">Digital DeFi Profile</span>
+                Altura read<br />your timeline
               </motion.h1>
 
               <motion.p
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.22 }}
-                className="text-2xl leading-relaxed mb-10 whitespace-nowrap"
+                className="text-xl sm:text-2xl leading-relaxed mb-10"
                 style={{ color: "#FAFAFA", opacity: 0.65, fontWeight: 300 }}
               >
-                are you an ai slop crypto bro or a giga brain degen?
+                Paste your handle. Connect for receipts.
               </motion.p>
 
               {/* Input form */}
