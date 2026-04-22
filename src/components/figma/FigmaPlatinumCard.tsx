@@ -30,14 +30,14 @@ const imgQrCode = `${A}/platinum-qr.svg`;
 export interface PlatinumPnlData {
   archetype: string;        // "Baby Whale"
   description: string;      // "$1K-$5K DEPOSITED. NOT QUITE GIGACHAD YET. BUT YOU'RE ON"
-  /** PnL fields — undefined when user is not a holder. */
+  /** Dollar PnL shown on the left. Undefined → left block hidden (e.g. when
+   *  user toggles "hide dollar amounts" on, or non-holder). */
   pnlValue?: string;        // "+$4,270"
-  pnlPercent?: string;      // "(+50,7%)"
-  /** Year-to-date return %. This slot used to be labelled "APY" but Altura's
-   *  snapshot endpoint doesn't expose a true annualised yield — the number
-   *  we render is the realised return since deposit, which is more accurately
-   *  framed as YTD. Label on the card reflects that. */
-  ytdValue?: string;        // "+5.16%"
+  /** Realised return % since deposit. Rendered on the right with label
+   *  "RETURN". This slot was previously labelled "APY" (and briefly "YTD"),
+   *  but Altura's snapshot endpoint doesn't expose a true annualised yield
+   *  — "RETURN" is accurate and jargon-free. */
+  returnValue?: string;     // "+5.16%"
   username?: string;        // X handle (without @)
   /** X profile picture URL (from X API `profile_image_url`). */
   avatarUrl?: string;
@@ -251,15 +251,13 @@ const FigmaPlatinumCard = forwardRef<HTMLDivElement, Props>(function FigmaPlatin
       </p>
 
       {/* === PnL area: holder sees numbers, non-holder sees CTA ===
-          PnL block and APY block are independent so we can hide the dollars
-          entirely (v6) without dropping APY. A holder with any numbers at all
-          (pnlValue OR apyValue) gets the metrics layout; otherwise the CTA. */}
-      {data.isHolder && (data.pnlValue || data.ytdValue) ? (
+          PNL block (left) and RETURN block (right) are independent so the
+          dollars can be hidden without dropping RETURN. Any holder with at
+          least one metric value shows the metrics layout; otherwise CTA. */}
+      {data.isHolder && (data.pnlValue || data.returnValue) ? (
         <>
-          {/* PNL block (left): big value + label. Suppressed when pnlValue
-              is undefined (v6 "hide dollar amounts" toggle) — APY alone
-              conveys the % performance and two identical percentages
-              side-by-side looked broken. */}
+          {/* PNL block (left): big $ value + "PNL" label. Hidden when
+              pnlValue is undefined (hide-dollars toggle). */}
           {data.pnlValue && (
             <div className="absolute content-stretch flex flex-col gap-[16.981px] items-start left-[32px] text-[transparent] top-[262.34px]">
               <p
@@ -286,25 +284,11 @@ const FigmaPlatinumCard = forwardRef<HTMLDivElement, Props>(function FigmaPlatin
             </div>
           )}
 
-          {/* Percent overlay (next to PNL value). Only shown when both the PNL
-              block and the percent are present. */}
-          {data.pnlValue && data.pnlPercent && (
-            <p
-              className="-translate-x-1/2 absolute bg-clip-text leading-[1.05] left-[351.01px] not-italic text-[27.792px] text-[transparent] text-center top-[294.13px] tracking-[-0.5558px] whitespace-nowrap"
-              style={{
-                fontFamily: "'Funnel Display', sans-serif",
-                fontWeight: 400,
-                backgroundImage:
-                  "linear-gradient(3.77deg, rgb(51, 141, 111) 3.7464%, rgb(0, 52, 35) 71.164%)",
-              }}
-            >
-              {data.pnlPercent}
-            </p>
-          )}
-
-          {/* APY block — when PNL is hidden, shift APY left into the PNL slot
-              so the card doesn't show one lonely number floating on the right. */}
-          {data.ytdValue && (
+          {/* RETURN block (right): big % value + "RETURN" label. Shifts into
+              the left slot when PNL is hidden so the card isn't visually
+              lopsided. The inline % overlay that used to sit between the two
+              blocks was removed in v7 — it duplicated this same number. */}
+          {data.returnValue && (
             <div
               className="absolute content-stretch flex flex-col gap-[16.981px] items-start text-[transparent]"
               style={{
@@ -321,7 +305,7 @@ const FigmaPlatinumCard = forwardRef<HTMLDivElement, Props>(function FigmaPlatin
                     "linear-gradient(87.59deg, rgb(85, 130, 100) 10.518%, rgb(56, 92, 68) 158.48%)",
                 }}
               >
-                {data.ytdValue}
+                {data.returnValue}
               </p>
               <p
                 className="bg-clip-text font-medium leading-[21.19px] min-w-full relative shrink-0 text-[16.981px] uppercase w-[min-content]"
@@ -331,7 +315,7 @@ const FigmaPlatinumCard = forwardRef<HTMLDivElement, Props>(function FigmaPlatin
                     "linear-gradient(169.45deg, rgb(95, 107, 99) 10.448%, rgb(186, 209, 193) 53.323%, rgb(255, 255, 255) 73.433%)",
                 }}
               >
-                YTD
+                RETURN
               </p>
             </div>
           )}

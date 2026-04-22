@@ -524,15 +524,13 @@ export default function Index() {
                   : undefined;
                 const handle = profile?.x?.user?.username ?? persona.username;
 
-                // v6: when `hideDollars` is on, the entire PnL block is
-                // suppressed (big value + "PNL" label + small % overlay). APY
-                // already conveys the % performance, so showing both made two
-                // identical percentages sit side-by-side. APY stays put and
-                // shifts into the left slot on the card when PnL is hidden.
+                // When `hideDollars` is on, the entire PNL block is suppressed
+                // (big $ value + "PNL" label). The RETURN column stays and
+                // shifts into the left slot so the card doesn't look lopsided.
+                // v7 also removed the inline % overlay — it duplicated the
+                // RETURN number on the right, so it's no longer passed in.
                 const cardPnlValue =
                   pnl && !hideDollars ? pnl.pnl : undefined;
-                const cardPnlPercent =
-                  pnl && !hideDollars ? pnl.pnlPercent : undefined;
 
                 return (
                   <CardScaler maxWidth={750}>
@@ -543,12 +541,11 @@ export default function Index() {
                         description: persona.archetype.description,
                         // PnL shown when holder, undefined otherwise
                         pnlValue: cardPnlValue,
-                        pnlPercent: cardPnlPercent,
-                        // Renamed from APY — this is the realised return %
-                        // since deposit, not a true annualised yield. Altura's
-                        // snapshot endpoint doesn't expose APY; labelling it
-                        // YTD on the card is accurate.
-                        ytdValue: pnl?.apy,
+                        // Realised return % since deposit. Rendered on the
+                        // right of the card with label "RETURN" (was APY,
+                        // briefly YTD). Altura's snapshot doesn't expose a
+                        // true annualised yield, so RETURN is accurate.
+                        returnValue: pnl?.apy,
                         username: handle,
                         avatarUrl: proxiedAvatar,
                         isHolder: isAlturaHolder,
