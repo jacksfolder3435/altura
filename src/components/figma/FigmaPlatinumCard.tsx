@@ -246,71 +246,91 @@ const FigmaPlatinumCard = forwardRef<HTMLDivElement, Props>(function FigmaPlatin
         {data.description}
       </p>
 
-      {/* === PnL area: holder sees numbers, non-holder sees CTA === */}
-      {data.isHolder && data.pnlValue ? (
+      {/* === PnL area: holder sees numbers, non-holder sees CTA ===
+          PnL block and APY block are independent so we can hide the dollars
+          entirely (v6) without dropping APY. A holder with any numbers at all
+          (pnlValue OR apyValue) gets the metrics layout; otherwise the CTA. */}
+      {data.isHolder && (data.pnlValue || data.apyValue) ? (
         <>
-          {/* PNL block (left): big value + label */}
-          <div className="absolute content-stretch flex flex-col gap-[16.981px] items-start left-[32px] text-[transparent] top-[262.34px]">
+          {/* PNL block (left): big value + label. Suppressed when pnlValue
+              is undefined (v6 "hide dollar amounts" toggle) — APY alone
+              conveys the % performance and two identical percentages
+              side-by-side looked broken. */}
+          {data.pnlValue && (
+            <div className="absolute content-stretch flex flex-col gap-[16.981px] items-start left-[32px] text-[transparent] top-[262.34px]">
+              <p
+                className="bg-clip-text leading-[1.05] not-italic relative shrink-0 text-[71.544px] text-center tracking-[-1.4309px] whitespace-nowrap"
+                style={{
+                  fontFamily: "'Funnel Display', sans-serif",
+                  fontWeight: 400,
+                  backgroundImage:
+                    "linear-gradient(86.86deg, rgb(85, 130, 100) 10.518%, rgb(56, 92, 68) 158.48%)",
+                }}
+              >
+                {data.pnlValue}
+              </p>
+              <p
+                className="bg-clip-text font-medium leading-[21.19px] min-w-full relative shrink-0 text-[16.981px] uppercase w-[min-content]"
+                style={{
+                  fontFamily: "'Geist Mono', monospace",
+                  backgroundImage:
+                    "linear-gradient(171.86deg, rgb(95, 107, 99) 10.448%, rgb(186, 209, 193) 53.323%, rgb(255, 255, 255) 73.433%)",
+                }}
+              >
+                PNL
+              </p>
+            </div>
+          )}
+
+          {/* Percent overlay (next to PNL value). Only shown when both the PNL
+              block and the percent are present. */}
+          {data.pnlValue && data.pnlPercent && (
             <p
-              className="bg-clip-text leading-[1.05] not-italic relative shrink-0 text-[71.544px] text-center tracking-[-1.4309px] whitespace-nowrap"
+              className="-translate-x-1/2 absolute bg-clip-text leading-[1.05] left-[351.01px] not-italic text-[27.792px] text-[transparent] text-center top-[294.13px] tracking-[-0.5558px] whitespace-nowrap"
               style={{
                 fontFamily: "'Funnel Display', sans-serif",
                 fontWeight: 400,
                 backgroundImage:
-                  "linear-gradient(86.86deg, rgb(85, 130, 100) 10.518%, rgb(56, 92, 68) 158.48%)",
+                  "linear-gradient(3.77deg, rgb(51, 141, 111) 3.7464%, rgb(0, 52, 35) 71.164%)",
               }}
             >
-              {data.pnlValue}
+              {data.pnlPercent}
             </p>
-            <p
-              className="bg-clip-text font-medium leading-[21.19px] min-w-full relative shrink-0 text-[16.981px] uppercase w-[min-content]"
-              style={{
-                fontFamily: "'Geist Mono', monospace",
-                backgroundImage:
-                  "linear-gradient(171.86deg, rgb(95, 107, 99) 10.448%, rgb(186, 209, 193) 53.323%, rgb(255, 255, 255) 73.433%)",
-              }}
-            >
-              PNL
-            </p>
-          </div>
+          )}
 
-          {/* Percent (next to PNL value) */}
-          <p
-            className="-translate-x-1/2 absolute bg-clip-text leading-[1.05] left-[351.01px] not-italic text-[27.792px] text-[transparent] text-center top-[294.13px] tracking-[-0.5558px] whitespace-nowrap"
-            style={{
-              fontFamily: "'Funnel Display', sans-serif",
-              fontWeight: 400,
-              backgroundImage:
-                "linear-gradient(3.77deg, rgb(51, 141, 111) 3.7464%, rgb(0, 52, 35) 71.164%)",
-            }}
-          >
-            {data.pnlPercent}
-          </p>
-
-          {/* APY block (right) */}
-          <div className="absolute content-stretch flex flex-col gap-[16.981px] items-start left-[464.45px] text-[transparent] top-[261px]">
-            <p
-              className="bg-clip-text leading-[1.05] not-italic relative shrink-0 text-[71.544px] text-center tracking-[-1.4309px] whitespace-nowrap"
+          {/* APY block — when PNL is hidden, shift APY left into the PNL slot
+              so the card doesn't show one lonely number floating on the right. */}
+          {data.apyValue && (
+            <div
+              className="absolute content-stretch flex flex-col gap-[16.981px] items-start text-[transparent]"
               style={{
-                fontFamily: "'Funnel Display', sans-serif",
-                fontWeight: 400,
-                backgroundImage:
-                  "linear-gradient(87.59deg, rgb(85, 130, 100) 10.518%, rgb(56, 92, 68) 158.48%)",
+                left: data.pnlValue ? 464.45 : 32,
+                top: data.pnlValue ? 261 : 262.34,
               }}
             >
-              {data.apyValue}
-            </p>
-            <p
-              className="bg-clip-text font-medium leading-[21.19px] min-w-full relative shrink-0 text-[16.981px] uppercase w-[min-content]"
-              style={{
-                fontFamily: "'Geist Mono', monospace",
-                backgroundImage:
-                  "linear-gradient(169.45deg, rgb(95, 107, 99) 10.448%, rgb(186, 209, 193) 53.323%, rgb(255, 255, 255) 73.433%)",
-              }}
-            >
-              APY
-            </p>
-          </div>
+              <p
+                className="bg-clip-text leading-[1.05] not-italic relative shrink-0 text-[71.544px] text-center tracking-[-1.4309px] whitespace-nowrap"
+                style={{
+                  fontFamily: "'Funnel Display', sans-serif",
+                  fontWeight: 400,
+                  backgroundImage:
+                    "linear-gradient(87.59deg, rgb(85, 130, 100) 10.518%, rgb(56, 92, 68) 158.48%)",
+                }}
+              >
+                {data.apyValue}
+              </p>
+              <p
+                className="bg-clip-text font-medium leading-[21.19px] min-w-full relative shrink-0 text-[16.981px] uppercase w-[min-content]"
+                style={{
+                  fontFamily: "'Geist Mono', monospace",
+                  backgroundImage:
+                    "linear-gradient(169.45deg, rgb(95, 107, 99) 10.448%, rgb(186, 209, 193) 53.323%, rgb(255, 255, 255) 73.433%)",
+                }}
+              >
+                APY
+              </p>
+            </div>
+          )}
         </>
       ) : (
         /* Non-holder: replace PnL block with a CTA to enter the vault */

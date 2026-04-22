@@ -524,15 +524,13 @@ export default function Index() {
                   : undefined;
                 const handle = profile?.x?.user?.username ?? persona.username;
 
-                // When `hideDollars` is on, the big PnL slot shows the %
-                // (signed) instead of the $ amount, and the smaller % overlay
-                // is suppressed to avoid duplication. The APY column is
-                // already a %, so it stays as-is regardless.
-                const cardPnlValue = pnl
-                  ? hideDollars
-                    ? pnl.pnlPercent
-                    : pnl.pnl
-                  : undefined;
+                // v6: when `hideDollars` is on, the entire PnL block is
+                // suppressed (big value + "PNL" label + small % overlay). APY
+                // already conveys the % performance, so showing both made two
+                // identical percentages sit side-by-side. APY stays put and
+                // shifts into the left slot on the card when PnL is hidden.
+                const cardPnlValue =
+                  pnl && !hideDollars ? pnl.pnl : undefined;
                 const cardPnlPercent =
                   pnl && !hideDollars ? pnl.pnlPercent : undefined;
 

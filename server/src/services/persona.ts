@@ -660,26 +660,31 @@ const KW_SER_YIELD = [
   "$rpl",
 ];
 
+// v6: tightened from 37 to 28 keywords. Dropped claim/snapshot/season/points/
+// tge/fdv/bridging/daily check-in/allocation — they all appear in non-airdrop
+// crypto contexts often enough to cause false positives. The remaining list
+// is unambiguously airdrop/farming-specific.
 const KW_AIRDROPS = [
   "airdrop",
   "testnet",
-  "points",
-  "season",
-  "$arb",
-  "$op",
-  "$zro",
   "farming",
-  "$strk",
-  "$jup",
-  "eligibility",
-  "claim",
-  "snapshot",
-  "tge",
-  "allocation",
   "retroactive",
   "retrodrop",
   "sybil",
   "point farming",
+  "points meta",
+  "quest farming",
+  "testnet faucet",
+  "early adopter",
+  "genesis drop",
+  "token claim",
+  "claim window",
+  "eligibility",
+  "$arb",
+  "$op",
+  "$zro",
+  "$strk",
+  "$jup",
   "$eigen",
   "$blast",
   "$scroll",
@@ -688,16 +693,6 @@ const KW_AIRDROPS = [
   "$layer3",
   "galxe",
   "zealy",
-  "quest farming",
-  "testnet faucet",
-  "bridging",
-  "daily check-in",
-  "early adopter",
-  "genesis drop",
-  "claim window",
-  "token claim",
-  "points meta",
-  "fdv",
 ];
 
 const KW_MEMECOINS = [
@@ -1007,7 +1002,10 @@ function classifyX(xProfile: XProfile | null): {
     { archetype: X_TITLES.perpsDegen!,     trigger: "x:perps_degen",     matches: s.perps,       threshold: 2 },
     { archetype: X_TITLES.chartGuy!,       trigger: "x:chart_guy",       matches: s.chart,       threshold: 2 },
     { archetype: X_TITLES.serYield!,       trigger: "x:ser_yield",       matches: s.serYield,    threshold: 2 },
-    { archetype: X_TITLES.airdropHunter!,  trigger: "x:airdrop_hunter",  matches: s.airdrops,    threshold: 1 },
+    // v6: threshold raised 1 → 2. Combined with the tightened keyword list,
+    // this requires real airdrop-specific language (not just one stray mention
+    // of a common crypto term) to trigger.
+    { archetype: X_TITLES.airdropHunter!,  trigger: "x:airdrop_hunter",  matches: s.airdrops,    threshold: 2 },
   ];
   const t1 = bestInTier(tier1);
   if (t1) return t1;
