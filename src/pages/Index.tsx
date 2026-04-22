@@ -544,7 +544,11 @@ export default function Index() {
                         // PnL shown when holder, undefined otherwise
                         pnlValue: cardPnlValue,
                         pnlPercent: cardPnlPercent,
-                        apyValue: pnl?.apy,
+                        // Renamed from APY — this is the realised return %
+                        // since deposit, not a true annualised yield. Altura's
+                        // snapshot endpoint doesn't expose APY; labelling it
+                        // YTD on the card is accurate.
+                        ytdValue: pnl?.apy,
                         username: handle,
                         avatarUrl: proxiedAvatar,
                         isHolder: isAlturaHolder,

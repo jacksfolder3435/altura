@@ -33,7 +33,11 @@ export interface PlatinumPnlData {
   /** PnL fields — undefined when user is not a holder. */
   pnlValue?: string;        // "+$4,270"
   pnlPercent?: string;      // "(+50,7%)"
-  apyValue?: string;        // "82,4%"
+  /** Year-to-date return %. This slot used to be labelled "APY" but Altura's
+   *  snapshot endpoint doesn't expose a true annualised yield — the number
+   *  we render is the realised return since deposit, which is more accurately
+   *  framed as YTD. Label on the card reflects that. */
+  ytdValue?: string;        // "+5.16%"
   username?: string;        // X handle (without @)
   /** X profile picture URL (from X API `profile_image_url`). */
   avatarUrl?: string;
@@ -250,7 +254,7 @@ const FigmaPlatinumCard = forwardRef<HTMLDivElement, Props>(function FigmaPlatin
           PnL block and APY block are independent so we can hide the dollars
           entirely (v6) without dropping APY. A holder with any numbers at all
           (pnlValue OR apyValue) gets the metrics layout; otherwise the CTA. */}
-      {data.isHolder && (data.pnlValue || data.apyValue) ? (
+      {data.isHolder && (data.pnlValue || data.ytdValue) ? (
         <>
           {/* PNL block (left): big value + label. Suppressed when pnlValue
               is undefined (v6 "hide dollar amounts" toggle) — APY alone
@@ -300,7 +304,7 @@ const FigmaPlatinumCard = forwardRef<HTMLDivElement, Props>(function FigmaPlatin
 
           {/* APY block — when PNL is hidden, shift APY left into the PNL slot
               so the card doesn't show one lonely number floating on the right. */}
-          {data.apyValue && (
+          {data.ytdValue && (
             <div
               className="absolute content-stretch flex flex-col gap-[16.981px] items-start text-[transparent]"
               style={{
@@ -317,7 +321,7 @@ const FigmaPlatinumCard = forwardRef<HTMLDivElement, Props>(function FigmaPlatin
                     "linear-gradient(87.59deg, rgb(85, 130, 100) 10.518%, rgb(56, 92, 68) 158.48%)",
                 }}
               >
-                {data.apyValue}
+                {data.ytdValue}
               </p>
               <p
                 className="bg-clip-text font-medium leading-[21.19px] min-w-full relative shrink-0 text-[16.981px] uppercase w-[min-content]"
@@ -327,7 +331,7 @@ const FigmaPlatinumCard = forwardRef<HTMLDivElement, Props>(function FigmaPlatin
                     "linear-gradient(169.45deg, rgb(95, 107, 99) 10.448%, rgb(186, 209, 193) 53.323%, rgb(255, 255, 255) 73.433%)",
                 }}
               >
-                APY
+                YTD
               </p>
             </div>
           )}
