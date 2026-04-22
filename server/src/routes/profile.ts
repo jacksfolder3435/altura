@@ -38,8 +38,9 @@ profileRouter.get("/profile/:username", async (req, res) => {
       console.error("[Altura API]", alturaResult.reason);
     }
 
-    // Run the data-driven persona engine
-    const persona = resolvePersona(xProfile, altura);
+    // Run the data-driven persona engine. Username is required so the engine
+    // can deterministically pick one of the 3 description variants per user.
+    const persona = resolvePersona(xProfile, altura, username.replace(/^@/, ""));
 
     return res.json({
       username: username.replace(/^@/, ""),

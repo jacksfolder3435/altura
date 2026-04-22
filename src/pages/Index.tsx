@@ -68,6 +68,9 @@ export default function Index() {
   // cardTheme removed — everyone gets the Platinum card now.
   const [pnl, setPnl] = useState<PnlData | null>(null);
   const [isAlturaHolder, setIsAlturaHolder] = useState(false);
+  /** Holder-only: when true, hide dollar amounts on the card (the % gain
+   *  still shows). Lets whales share the flex without doxxing position size. */
+  const [hideDollars, setHideDollars] = useState(false);
   /** Backend response we use for sharing/raffle logging. */
   const [profile, setProfile] = useState<ProfileResponse | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -145,6 +148,7 @@ export default function Index() {
     setProfile(null);
     setPnl(null);
     setIsAlturaHolder(false);
+    setHideDollars(false);
     // (platinum is now the only card — no theme reset needed)
     setTimeout(() => inputRef.current?.focus(), 100);
   }
@@ -520,6 +524,18 @@ export default function Index() {
                   : undefined;
                 const handle = profile?.x?.user?.username ?? persona.username;
 
+                // When `hideDollars` is on, the big PnL slot shows the %
+                // (signed) instead of the $ amount, and the smaller % overlay
+                // is suppressed to avoid duplication. The APY column is
+                // already a %, so it stays as-is regardless.
+                const cardPnlValue = pnl
+                  ? hideDollars
+                    ? pnl.pnlPercent
+                    : pnl.pnl
+                  : undefined;
+                const cardPnlPercent =
+                  pnl && !hideDollars ? pnl.pnlPercent : undefined;
+
                 return (
                   <CardScaler maxWidth={750}>
                     <FigmaPlatinumCard
@@ -528,8 +544,8 @@ export default function Index() {
                         archetype: persona.archetype.name,
                         description: persona.archetype.description,
                         // PnL shown when holder, undefined otherwise
-                        pnlValue: pnl?.pnl,
-                        pnlPercent: pnl?.pnlPercent,
+                        pnlValue: cardPnlValue,
+                        pnlPercent: cardPnlPercent,
                         apyValue: pnl?.apy,
                         username: handle,
                         avatarUrl: proxiedAvatar,
@@ -539,6 +555,77 @@ export default function Index() {
                   </CardScaler>
                 );
               })()}
+
+              {/* Holder-only: toggle to strip dollar amounts before sharing. */}
+              {isAlturaHolder && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.55 }}
+                  className="mt-5 flex items-center justify-center"
+                  data-export-ignore="1"
+                >
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={hideDollars}
+                    onClick={() => setHideDollars((v) => !v)}
+                    className="inline-flex items-center gap-3 px-4 py-2 select-none"
+                    style={{
+                      background: "rgba(94,255,202,0.08)",
+                      border: "1px solid rgba(94,255,202,0.25)",
+                      borderRadius: "999px",
+                      cursor: "pointer",
+                      transition: "background 0.15s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "rgba(94,255,202,0.14)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "rgba(94,255,202,0.08)";
+                    }}
+                  >
+                    {/* Pill switch */}
+                    <span
+                      aria-hidden
+                      style={{
+                        position: "relative",
+                        display: "inline-block",
+                        width: 34,
+                        height: 20,
+                        borderRadius: 999,
+                        background: hideDollars
+                          ? BRAND
+                          : "rgba(250,250,250,0.18)",
+                        transition: "background 0.15s ease",
+                        flexShrink: 0,
+                      }}
+                    >
+                      <span
+                        style={{
+                          position: "absolute",
+                          top: 2,
+                          left: hideDollars ? 16 : 2,
+                          width: 16,
+                          height: 16,
+                          borderRadius: "50%",
+                          background: hideDollars ? "#000" : "#FAFAFA",
+                          transition: "left 0.15s ease, background 0.15s ease",
+                        }}
+                      />
+                    </span>
+                    <span
+                      className="text-xs font-mono tracking-wide"
+                      style={{
+                        color: "#FAFAFA",
+                        opacity: hideDollars ? 1 : 0.75,
+                      }}
+                    >
+                      hide dollar amounts
+                    </span>
+                  </button>
+                </motion.div>
+              )}
 
               {/* Action buttons */}
               <motion.div
