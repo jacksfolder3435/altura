@@ -263,15 +263,22 @@ export default function Index() {
    * Share to X with the card image attached.
    *
    * Twitter's web intent (twitter.com/intent/tweet) does NOT accept image
-   * attachments via URL — only text. So we use a layered fallback:
+   * attachments via URL — only text. Two paths:
    *
-   *   1. Web Share API with `files` (mobile + Chrome desktop): native OS
-   *      share sheet → user picks Twitter → text + image both attach in
-   *      one tap. Best UX. Fully sufficient on iOS/Android.
-   *   2. Fallback: copy the image to the clipboard, then open the tweet
-   *      compose window with the text pre-filled, and show a toast telling
-   *      the user to paste (⌘V / Ctrl+V) the image into the compose box.
-   *   3. Final fallback: just open the intent with text-only.
+   *   MOBILE (iOS/Android): Web Share API with files — native share sheet
+   *     handles both text + image in one tap. Best UX.
+   *
+   *   DESKTOP: open the X compose window IMMEDIATELY on click (preserves
+   *     the user-gesture context so popup blockers don't eat it), then in
+   *     the background capture the card and copy it to the clipboard so
+   *     the user can ⌘V / Ctrl+V it into the open compose window.
+   *
+   * The old version did `await captureCardBlob()` → `window.open()`, which
+   * made the popup fire ~1-3s after the click (after the image finished
+   * loading). Chrome and Safari both block popups that race an async gap
+   * that long — users saw "preparing card…" then nothing, clicked again,
+   * and raffle entries logged without the share completing (visible in
+   * nginx as multiple POST /api/share from the same IP within seconds).
    */
   const handleShare = useCallback(async () => {
     if (!persona || shareState === "sharing") return;
@@ -281,6 +288,27 @@ export default function Index() {
     logShareEntry();
 
     const text = buildShareText();
+    const intent = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
+      text,
+    )}`;
+
+    // Rough UA sniff — Web Share API is useful on mobile (native share
+    // sheet), less useful on desktop even when supported. Detecting
+    // here BEFORE any async work so the desktop path can open the intent
+    // synchronously inside the click handler.
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const hasWebShare =
+      typeof navigator.share === "function" &&
+      typeof navigator.canShare === "function";
+    const tryWebShare = isMobile && hasWebShare;
+
+    // DESKTOP: open X compose window NOW, in user-gesture context.
+    // If the browser still blocks it (strict popup policy), we fall back
+    // to same-tab navigation at the end.
+    let tweetWin: Window | null = null;
+    if (!tryWebShare) {
+      tweetWin = window.open(intent, "_blank", "noopener,noreferrer");
+    }
 
     try {
       const blob = await captureCardBlob();
@@ -290,61 +318,59 @@ export default function Index() {
           })
         : null;
 
-      // 1) Native Web Share API with files (best mobile UX)
+      // MOBILE path: Web Share with files.
       if (
+        tryWebShare &&
         file &&
-        typeof navigator.canShare === "function" &&
         navigator.canShare({ files: [file] })
       ) {
         try {
-          await navigator.share({
-            text,
-            files: [file],
-          } as ShareData);
+          await navigator.share({ text, files: [file] } as ShareData);
           setShareState("done");
           setTimeout(() => setShareState("idle"), 2000);
           return;
         } catch (shareErr) {
-          // User cancelled — that's fine, just exit.
           if ((shareErr as DOMException)?.name === "AbortError") {
             setShareState("idle");
             return;
           }
-          // Fall through to clipboard fallback
-          console.warn("Web Share failed, falling back to clipboard", shareErr);
+          console.warn("[share] Web Share failed, falling back", shareErr);
+          // Fall through to desktop-style path
+          tweetWin = window.open(intent, "_blank", "noopener,noreferrer");
         }
       }
 
-      // 2) Clipboard + intent fallback (desktop browsers without Web Share)
+      // DESKTOP path (or mobile fallback): compose window should already be
+      // open; attempt to copy the image to the clipboard so the user can
+      // paste it into the tweet.
       if (blob) {
         try {
           await navigator.clipboard.write([
             new ClipboardItem({ "image/png": blob }),
           ]);
-          // Show "image copied — paste in compose" hint
           setShareState("paste-hint");
           setTimeout(() => setShareState("idle"), 6000);
-          // Open compose right after, so the user can ⌘V immediately
-          const intent = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
-            text,
-          )}`;
-          window.open(intent, "_blank", "noopener,noreferrer");
           return;
         } catch (clipErr) {
-          console.warn("Clipboard write failed too", clipErr);
+          console.warn("[share] clipboard write failed", clipErr);
         }
       }
 
-      // 3) Final fallback — text-only intent
-      const intent = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
-      window.open(intent, "_blank", "noopener,noreferrer");
-      setShareState("idle");
+      // Image couldn't be copied — the compose window still has the text.
+      setShareState("done");
+      setTimeout(() => setShareState("idle"), 2000);
+
+      // Last-resort: if the popup was blocked (tweetWin is null), send the
+      // user to X in the same tab so the share still lands.
+      if (!tweetWin) {
+        window.location.href = intent;
+      }
     } catch (e) {
-      console.error("Share failed", e);
+      console.error("[share] pipeline failed", e);
       setShareState("idle");
-      // Last-ditch: text-only intent
-      const intent = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
-      window.open(intent, "_blank", "noopener,noreferrer");
+      if (!tweetWin) {
+        window.location.href = intent;
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [persona, profile, shareState, captureCardBlob]);
