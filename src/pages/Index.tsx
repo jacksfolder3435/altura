@@ -262,34 +262,26 @@ export default function Index() {
   /**
    * Share to X with the card image attached.
    *
-   * Twitter's web intent URL doesn't accept image attachments — only text.
-   * To get the image into the tweet we have two routes, preferred in order:
+   * Two paths by platform (UA-based, not feature-based — see WHY below):
    *
-   *   1. WEB SHARE API WITH FILES — native OS share sheet including the
-   *      image file. Works on:
-   *        - iOS Safari 15+ / iOS Chrome
-   *        - Android Chrome / Samsung Internet
-   *        - Desktop Chrome 94+ (macOS + Windows)
-   *        - Desktop Safari 16.4+ (macOS)
-   *      User picks Twitter from the sheet and both text + image land in
-   *      the composer. One tap, image attached — best possible UX.
+   *   MOBILE (iOS/Android): Web Share API with files → native share sheet
+   *     → user picks X/Twitter app → tweet gets text + image in one tap.
+   *     Best possible UX on phones.
    *
-   *   2. CLIPBOARD + COMPOSE WINDOW — for browsers without Web Share (e.g.
-   *      Firefox desktop). We write the PNG to the clipboard and open the
-   *      X compose window with text pre-filled; user pastes the image with
-   *      ⌘V / Ctrl+V. Shown as a toast.
+   *   DESKTOP: Pre-open the X compose window synchronously inside the
+   *     click handler (so popup blocker doesn't eat it), capture the
+   *     card in the background, write the PNG to the clipboard, and
+   *     tell the user to paste it. X's web compose doesn't accept image
+   *     URLs via intent, and Web Share on macOS/Windows desktop shows
+   *     a generic OS share sheet (Mail/Messages/AirDrop) that usually
+   *     doesn't have an X target unless the native X app is installed
+   *     — so users see it and think the button is broken. Clipboard
+   *     + paste is slightly more work but matches the compose window
+   *     they expect.
    *
-   * Popup-blocker rules mean `window.open()` has to fire SYNCHRONOUSLY
-   * inside the click handler to work — any `await` before it loses the
-   * user-gesture context and the popup gets blocked. So on browsers where
-   * Web Share isn't available, we pre-open the intent window on click and
-   * do the image work afterwards. On browsers where Web Share IS available
-   * we skip the pre-open (Web Share is a native sheet, not a popup) and
-   * fall back to same-tab navigation if it somehow doesn't work.
-   *
-   * Historical bug: the previous version only tried Web Share on mobile
-   * (UA sniff), so desktop users never got image auto-attached — they got
-   * clipboard + paste hint even on browsers that could have done better.
+   * All paths call logShareEntry() first so the raffle entry logs even
+   * if the share target doesn't complete. Verbose console markers make
+   * debugging on a real user's browser session easier.
    */
   const handleShare = useCallback(async () => {
     if (!persona || shareState === "sharing") return;
@@ -303,19 +295,26 @@ export default function Index() {
       text,
     )}`;
 
-    // Feature-detect Web Share with files support. We can't ask
-    // `canShare({ files })` yet because we haven't captured the image —
-    // so we check the API surface and defer the real file check.
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     const hasWebShare =
       typeof navigator.share === "function" &&
       typeof navigator.canShare === "function";
+    // Web Share is only used on mobile — see comment on the function.
+    const tryWebShare = isMobile && hasWebShare;
 
-    // If Web Share isn't available at all, pre-open the compose window
-    // NOW (sync, user-gesture context) to avoid popup blockers. Web Share
-    // browsers skip this because the native share sheet isn't a popup.
+    console.info("[share] path:", {
+      platform: isMobile ? "mobile" : "desktop",
+      route: tryWebShare ? "web-share" : "pre-open+clipboard",
+    });
+
+    // DESKTOP: open the X compose window NOW, inside the user-gesture
+    // context, so popup blockers don't fire. tweetWin may still be null
+    // if the browser blocks everything — we fall back to same-tab
+    // navigation at the end.
     let tweetWin: Window | null = null;
-    if (!hasWebShare) {
+    if (!tryWebShare) {
       tweetWin = window.open(intent, "_blank", "noopener,noreferrer");
+      console.info("[share] pre-opened intent window:", tweetWin ? "ok" : "blocked");
     }
 
     try {
@@ -325,52 +324,54 @@ export default function Index() {
             type: "image/png",
           })
         : null;
+      console.info("[share] capture:", blob ? `ok (${blob.size}b)` : "null");
 
-      // Primary path: Web Share with the image file. Works across mobile
-      // AND modern desktop browsers — a native share sheet that actually
-      // attaches the image to whatever target the user picks.
-      if (hasWebShare && file && navigator.canShare({ files: [file] })) {
+      // MOBILE path: Web Share with files.
+      if (tryWebShare && file && navigator.canShare({ files: [file] })) {
         try {
           await navigator.share({ text, files: [file] } as ShareData);
+          console.info("[share] web-share: success");
           setShareState("done");
           setTimeout(() => setShareState("idle"), 2000);
           return;
         } catch (shareErr) {
           if ((shareErr as DOMException)?.name === "AbortError") {
-            // User cancelled the share sheet — don't fall back, just reset.
+            console.info("[share] web-share: user cancelled");
             setShareState("idle");
             return;
           }
-          console.warn("[share] Web Share failed, falling back", shareErr);
-          // Web Share failed for a real reason. Try to open the intent
-          // window now — user-gesture may be gone, so popup could be
-          // blocked; the location.href fallback below catches that.
+          console.warn("[share] web-share failed, falling back", shareErr);
+          // Mobile fallback — open the intent window. User-gesture may be
+          // gone, so this might be popup-blocked; the final location.href
+          // fallback below will cover it.
           tweetWin = window.open(intent, "_blank", "noopener,noreferrer");
         }
       }
 
-      // Fallback: paste-from-clipboard flow. Compose window is either
-      // already open (pre-opened above when Web Share was absent) or
-      // just opened from the Web Share failure branch.
+      // DESKTOP (or mobile fallback): clipboard + paste hint. Compose
+      // window was pre-opened above.
       if (blob) {
         try {
           await navigator.clipboard.write([
             new ClipboardItem({ "image/png": blob }),
           ]);
+          console.info("[share] clipboard: wrote image");
           setShareState("paste-hint");
           setTimeout(() => setShareState("idle"), 6000);
-          // Popup blocked and clipboard wrote successfully → still need
-          // to get the user to X. Same-tab nav is the last resort.
-          if (!tweetWin) window.location.href = intent;
+          // Popup was blocked but clipboard worked — still need to get the
+          // user to X. Same-tab nav as a final fallback.
+          if (!tweetWin) {
+            console.info("[share] popup blocked, same-tab nav");
+            window.location.href = intent;
+          }
           return;
         } catch (clipErr) {
           console.warn("[share] clipboard write failed", clipErr);
         }
       }
 
-      // Neither Web Share nor clipboard worked — compose window has
-      // text only. Let user know it's done (or redirect if popup was
-      // blocked).
+      // No image / clipboard failed — compose window still has text only.
+      console.info("[share] text-only share");
       setShareState("done");
       setTimeout(() => setShareState("idle"), 2000);
       if (!tweetWin) {
